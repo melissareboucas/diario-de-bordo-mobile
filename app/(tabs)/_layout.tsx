@@ -18,12 +18,12 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarStyle: {
-          backgroundColor: 'white', 
+          backgroundColor: 'white',
         },
-        tabBarActiveTintColor: '#196966',   
-        tabBarInactiveTintColor: 'gray',  
+        tabBarActiveTintColor: '#196966',
+        tabBarInactiveTintColor: 'gray',
       }}
-      >
+    >
       <Tabs.Screen
         name="index"
         options={{
@@ -52,6 +52,16 @@ export default function TabLayout() {
         name="profileSetup"
         options={{
           tabBarLabel: "Perfil",
+          headerShown: false,
+          tabBarIcon: ({ color }) => <TabBarIcon name="keyboard-control" color={color} />,
+        }}
+      />
+
+      <Tabs.Screen
+        name="posts"
+        options={{
+          href: null,
+          tabBarLabel: "posts",
           headerShown: false,
           tabBarIcon: ({ color }) => <TabBarIcon name="keyboard-control" color={color} />,
         }}

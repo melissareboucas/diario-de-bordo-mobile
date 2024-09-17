@@ -1,17 +1,39 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   StyleSheet, SafeAreaView, ScrollView, StatusBar,
   Image, View, Text, FlatList, TouchableOpacity, Modal,
-  TextInput,
-  ListRenderItem
+  TextInput, ListRenderItem, RefreshControl,
+  ActivityIndicator,
+  Pressable
 } from 'react-native';
-import { getTravelsByUser } from '../../data/retrieveData.js'
+import DropDownPicker from 'react-native-dropdown-picker';
+
+import { getTravelsByUser } from '../../data/retrieveData'
+import { addTravel } from '../../data/insertData'
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Timestamp } from 'firebase/firestore';
+import { Link } from 'expo-router';
 
 interface travelData {
-  id: string,
+  travel_id: string,
+  user_id: string,
+  origincity: string,
+  origincountry: string,
+  originlatitude: number,
+  originlongitude: number,
+  destinycity: string,
+  destinycountry: string,
+  destinylatitude: number,
+  destinylongitude: number,
+  distanceinmeters: number,
+  modal: string,
+  travel_image: string,
+  date: Timestamp,
+  description: string
+}
+
+interface insertTravelData {
   user_id: string,
   origincity: string,
   origincountry: string,
@@ -33,11 +55,39 @@ export default function Travels() {
   const [travels, setTravels] = useState<any[]>([]);
   const [modalCreateTravelVisible, setModalCreateTravelVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(null);
+  const [items, setItems] = useState([
+    { label: 'Avião', value: 'Avião' },
+    { label: 'Navio', value: 'Navio' },
+    { label: 'Trem', value: 'Trem' },
+    { label: 'Ônibus', value: 'Ônibus' },
+    { label: 'Carro', value: 'Carro' },
+    { label: 'Moto', value: 'Moto' },
+    { label: 'Bicicleta', value: 'Bicicleta' },
+    { label: 'Caminhando', value: 'Caminhando' },
+    { label: 'Outros', value: 'Outros' }
+  ]);
+  const [origincity, setOriginCity] = useState('');
+  const [destinycity, setDestinyCity] = useState('');
+  const [description, setDescription] = useState('');
+
+
 
   useEffect(() => {
     const fetchTravels = async () => {
-      const travelsList = await getTravelsByUser("ayXVaqgFJZ4sBgoLKW29");
-      setTravels(travelsList || []);
+      try {
+        setLoading(true);
+        const travelsList = await getTravelsByUser("ayXVaqgFJZ4sBgoLKW29");
+        setTravels(travelsList || []);
+      } catch (error) {
+        console.error('Error fetching travels:', error);
+      } finally {
+        setLoading(false);
+      }
+
     };
 
     fetchTravels();
@@ -47,8 +97,36 @@ export default function Travels() {
     setSearchText(text);
   };
 
+  const handleOriginCity = (text: string) => {
+    setOriginCity(text);
+  };
+
+  const handleDetinyCity = (text: string) => {
+    setDestinyCity(text);
+  };
+
+  const handleDescription = (text: string) => {
+    setDescription(text);
+  };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+
+    setTimeout(() => {
+      const fetchTravels = async () => {
+        const travelsList = await getTravelsByUser("ayXVaqgFJZ4sBgoLKW29");
+        setTravels(travelsList || []);
+      };
+
+      fetchTravels();
+      setRefreshing(false);
+    }, 2000);
+  }, [travels]);
+
+
+
   const renderTravelCard: ListRenderItem<travelData> = ({ item }) => (
-    <View key={item.id} style={styles.cardContainer}>
+    <View key={item.travel_id} style={styles.cardContainer}>
       <View style={styles.card}>
 
         <View style={styles.cardHeader}>
@@ -58,9 +136,19 @@ export default function Travels() {
               {item.origincity}, {item.origincountry}
             </Text>
           </View>
-          <TouchableOpacity style={styles.cardOptions}>
-            <MaterialIcons size={28} name='keyboard-control' color={'#45B3AF'} />
-          </TouchableOpacity>
+          
+            <Link
+              style={styles.cardOptions}
+              href={{
+                pathname: '/(tabs)/posts',
+                params: { id: item.travel_id } 
+              }}>
+                <MaterialIcons size={28} name='keyboard-arrow-right' color={'#45B3AF'} />
+            </Link>
+            
+          
+
+
         </View>
 
         <View style={styles.cardLocation}>
@@ -85,9 +173,40 @@ export default function Travels() {
     </View>
   )
 
+  const handleCreateTravel = () => {
+    const newTravel: insertTravelData = {
+      user_id: 'ayXVaqgFJZ4sBgoLKW29',
+      origincity: origincity,
+      origincountry: 'Brasil',
+      originlatitude: -23.5505,
+      originlongitude: -46.6333,
+      destinycity: destinycity,
+      destinycountry: 'Brasil',
+      destinylatitude: -22.9068,
+      destinylongitude: -43.1729,
+      distanceinmeters: 429000,
+      modal: value ?? 'avião',
+      travel_image: 'https://static.mundoeducacao.uol.com.br/mundoeducacao/2021/03/1-cristo-redentor.jpg',
+      date: Timestamp.fromDate(new Date()), // Data atual
+      description: description,
+    };
+
+    addTravel(newTravel);
+    setModalCreateTravelVisible(false)
+  };
+
+
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
+      <ScrollView
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+          />
+        }
+      >
         <View>
           <StatusBar barStyle="dark-content" backgroundColor="#fff" />
           <Image
@@ -112,14 +231,82 @@ export default function Travels() {
             >
               <View style={styles.modalOverlay}>
                 <View style={styles.modalContent}>
-                  <Text style={styles.modalText}>Este é o conteúdo do modal!</Text>
-                  <TouchableOpacity
-                    style={styles.headerButton}
-                    onPress={() => setModalCreateTravelVisible(false)}>
-                    <Text style={styles.headerButtonText}>
-                      Cancelar
-                    </Text>
+                  <Text style={styles.modalText}>
+                    Como foi sua viagem?
+                  </Text>
+
+                  <TextInput
+                    style={styles.modalInputText}
+                    placeholder='Cidade de origem da viagem'
+                    placeholderTextColor='#45B3AF'
+                    value={origincity}
+                    onChangeText={handleOriginCity}
+                  />
+
+                  <TextInput
+                    style={styles.modalInputText}
+                    placeholder='Cidade de destino da viagem'
+                    placeholderTextColor='#45B3AF'
+                    value={destinycity}
+                    onChangeText={handleDetinyCity}
+                  />
+
+                  <DropDownPicker
+                    open={open}
+                    value={value}
+                    items={items}
+                    setOpen={setOpen}
+                    setValue={setValue}
+                    setItems={setItems}
+                    placeholder="Modalidade"
+                    style={styles.modalPicker}
+                    textStyle={styles.modalDropdownText}
+                    dropDownContainerStyle={styles.mdoalDropDownContainer}
+                    ArrowUpIconComponent={() => (
+                      <MaterialIcons size={28} name='keyboard-arrow-up' color='#45B3AF' />
+                    )}
+                    ArrowDownIconComponent={() => (
+                      <MaterialIcons size={28} name='keyboard-arrow-down' color='#45B3AF' />
+                    )}
+                  />
+
+                  <TextInput
+                    style={styles.modalInputDescriptionText}
+                    placeholder='Descrição'
+                    placeholderTextColor='#45B3AF'
+                    multiline
+                    textAlignVertical="top"
+                    value={description}
+                    onChangeText={handleDescription}
+                  />
+
+                  <TouchableOpacity>
+                    <Image
+                      style={styles.modalImage}
+                      source={require('../../assets/images/addImage.png')}
+                    />
                   </TouchableOpacity>
+
+                  <View style={styles.modalButtons}>
+
+                    <TouchableOpacity
+                      style={styles.modalCancelButton}
+                      onPress={() => setModalCreateTravelVisible(false)}>
+                      <Text style={styles.modalCancelButtonText}>
+                        Cancelar
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.modalAddButton}
+                      onPress={() => handleCreateTravel()}>
+                      <Text style={styles.modalAddButtonText}>
+                        Adicionar
+                      </Text>
+                    </TouchableOpacity>
+
+                  </View>
+
                 </View>
               </View>
             </Modal>
@@ -139,11 +326,21 @@ export default function Travels() {
           />
         </View>
 
-        <FlatList
-          data={travels}
-          renderItem={renderTravelCard}
-          keyExtractor={item => item.id}
-        />
+        {loading && (
+          <View style={styles.container}>
+            <ActivityIndicator size="large" color="#196966" />
+          </View>)
+        }
+
+        {!loading && (
+          <FlatList
+            data={travels}
+            renderItem={renderTravelCard}
+            keyExtractor={item => item.travel_id}
+          />
+        )}
+
+
       </ScrollView>
     </SafeAreaView >
   );
@@ -187,6 +384,9 @@ const styles = StyleSheet.create({
     color: '#196966',
     fontSize: 18,
   },
+  modalTravelOptionsContainer: {
+    flex: 1
+  },
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',
@@ -199,11 +399,96 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 10,
     alignItems: 'center',
+    borderColor: "#45B3AF",
+    borderWidth: 1
   },
   modalText: {
     marginBottom: 15,
-    fontSize: 18,
+    fontSize: 24,
     textAlign: 'center',
+    color: "#196966",
+    fontWeight: 'bold'
+  },
+  modalInputText: {
+    borderWidth: 1,
+    borderColor: '#45B3AF',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    paddingLeft: 10,
+    paddingRight: 10,
+    margin: 5,
+    width: 250,
+    height: 50,
+    color: '#45B3AF'
+  },
+  modalPicker: {
+    borderWidth: 1,
+    borderColor: '#45B3AF',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    paddingLeft: 10,
+    paddingRight: 10,
+    margin: 5,
+    width: 250,
+    height: 50,
+  },
+  modalDropdownText: {
+    fontSize: 14,
+    color: '#45B3AF'
+  },
+  mdoalDropDownContainer: {
+    backgroundColor: 'white',
+    borderColor: '#45B3AF',
+
+  },
+  modalInputDescriptionText: {
+    borderWidth: 1,
+    borderColor: '#45B3AF',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    paddingLeft: 10,
+    paddingRight: 10,
+    paddingTop: 10,
+    margin: 5,
+    width: 250,
+    height: 150,
+    color: '#45B3AF'
+  },
+  modalImage: {
+    width: 200,
+    height: 150,
+    resizeMode: 'contain'
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly'
+
+  },
+  modalCancelButton: {
+    backgroundColor: '#E5E5E5',
+    borderRadius: 7,
+    paddingTop: 3,
+    paddingBottom: 3,
+    paddingLeft: 10,
+    paddingRight: 10,
+    marginRight: 10,
+  },
+  modalCancelButtonText: {
+    color: 'black',
+    padding: 5
+  },
+  modalAddButton: {
+    backgroundColor: '#45B3AF',
+    borderRadius: 7,
+    paddingTop: 3,
+    paddingBottom: 3,
+    paddingLeft: 10,
+    paddingRight: 10,
+    marginLeft: 10,
+  },
+  modalAddButtonText: {
+    color: 'white',
+    padding: 5
   },
   searchContainer: {
     flexDirection: 'row',
