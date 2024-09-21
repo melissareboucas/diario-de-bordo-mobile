@@ -15,6 +15,9 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Timestamp } from 'firebase/firestore';
 import { Link } from 'expo-router';
 
+import { useIsFocused } from '@react-navigation/native';
+
+
 interface travelData {
   travel_id: string,
   user_id: string,
@@ -52,6 +55,9 @@ interface insertTravelData {
 
 
 export default function Travels() {
+
+  const isFocused = useIsFocused();
+
   const [travels, setTravels] = useState<any[]>([]);
   const [modalCreateTravelVisible, setModalCreateTravelVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -77,21 +83,23 @@ export default function Travels() {
 
 
   useEffect(() => {
-    const fetchTravels = async () => {
-      try {
-        setLoading(true);
-        const travelsList = await getTravelsByUser("ayXVaqgFJZ4sBgoLKW29");
-        setTravels(travelsList || []);
-      } catch (error) {
-        console.error('Error fetching travels:', error);
-      } finally {
-        setLoading(false);
-      }
+    if (isFocused) {
+      const fetchTravels = async () => {
+        try {
+          setLoading(true);
+          const travelsList = await getTravelsByUser("ayXVaqgFJZ4sBgoLKW29");
+          setTravels(travelsList || []);
+        } catch (error) {
+          console.error('Error fetching travels:', error);
+        } finally {
+          setLoading(false);
+        }
 
-    };
+      };
 
-    fetchTravels();
-  }, []);
+      fetchTravels();
+    }
+  }, [isFocused]);
 
   const handleSearch = (text: string) => {
     setSearchText(text);
@@ -136,17 +144,17 @@ export default function Travels() {
               {item.origincity}, {item.origincountry}
             </Text>
           </View>
-          
-            <Link
-              style={styles.cardOptions}
-              href={{
-                pathname: '/(tabs)/posts',
-                params: { id: item.travel_id } 
-              }}>
-                <MaterialIcons size={28} name='keyboard-arrow-right' color={'#45B3AF'} />
-            </Link>
-            
-          
+
+          <Link
+            style={styles.cardOptions}
+            href={{
+              pathname: '/(tabs)/posts',
+              params: { id: item.travel_id }
+            }}>
+            <MaterialIcons size={28} name='keyboard-arrow-right' color={'#45B3AF'} />
+          </Link>
+
+
 
 
         </View>

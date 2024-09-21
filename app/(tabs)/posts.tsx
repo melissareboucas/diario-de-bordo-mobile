@@ -6,6 +6,10 @@ import { getPostsByTravel, getTravelById } from '@/data/retrieveData';
 import { Timestamp } from 'firebase/firestore';
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { deleteTravelById } from '@/data/deleteData';
+
+import { useNavigation } from '@react-navigation/native';
+
 
 
 interface postData {
@@ -31,6 +35,8 @@ export default function Posts() {
   const [deleteModal, setDeleteModal] = useState(false);
   const [addModal, setAddModal] = useState(false);
 
+  const navigation = useNavigation();
+
   useEffect(() => {
     const fetchPosts = async () => {
       try {
@@ -48,7 +54,7 @@ export default function Posts() {
     fetchPosts();
 
 
-  }, []);
+  }, [travel_id]);
 
   useEffect(() => {
     const fetchTravel = async () => {
@@ -56,7 +62,7 @@ export default function Posts() {
         setLoading(true);
         const travelDetails = await getTravelById(travel_id);
         setTravel(travelDetails || []);
-        
+
       } catch (error) {
         console.error('Error fetching travel:', error);
       } finally {
@@ -67,9 +73,7 @@ export default function Posts() {
 
     fetchTravel();
 
-  }, [])
-
-  
+  }, [travel_id])
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -80,12 +84,21 @@ export default function Posts() {
         setPosts(postsList || []);
       };
 
+      const fetchTravel = async () => {
+        const travelDetails = await getTravelById(travel_id);
+        setTravel(travelDetails || []);
+      }
+
       fetchPosts();
+      fetchTravel();
+
       setRefreshing(false);
     }, 2000);
-  }, [posts]);
+  }, [posts, travel_id]);
 
   const handleDeleteTravel = () => {
+    deleteTravelById(travel_id);
+    navigation.goBack();
     setDeleteModal(false)
   };
 
@@ -132,16 +145,20 @@ export default function Posts() {
 
             <View style={styles.header}>
 
-              <View style={styles.headerDetails}>
-                <Text style={styles.headerText}>
-                  {travel[0].destinycity}, {travel[0].destinycountry}
-                </Text>
+              {travel.length > 0 &&
+                <View style={styles.headerDetails}>
 
-                <Text style={styles.headerDate}>
-                  {travel[0].date.toDate().toLocaleDateString()}
-                </Text>
-              </View>
+                  <Text style={styles.headerText}>
 
+                    {travel[0].destinycity}, {travel[0].destinycountry}
+
+                  </Text>
+
+                  <Text style={styles.headerDate}>
+                    {travel[0].date.toDate().toLocaleDateString()}
+                  </Text>
+                </View>
+              }
               <TouchableOpacity
                 onPress={() => setEditModal(true)}
               >
