@@ -35,7 +35,7 @@ const getTravelsByUser = async (user_id: string) => {
     }));
     return travelsList;
   } catch (error) {
-    console.error('Erro ao listar vigens: ', error);
+    console.error('Erro ao listar viagens: ', error);
   }
 };
 
@@ -95,5 +95,27 @@ const getPostById = async (post_id: string) => {
   }
 };
 
+const searchTravels = async (user_id: string, text: string) => {
 
-export { listUsers, getTravelsByUser, getTravelById, getPostsByTravel, getPostById };
+  if (text) {
+    text = text.charAt(0).toUpperCase() + text.slice(1);
+  }
+
+  try {
+    const travelsCollection = collection(db, 'travels');
+
+    const travelsQuery = query(travelsCollection, where("destinycity", "==", text), orderBy("date", "desc"))
+
+    const travelsSnapshot = await getDocs(travelsQuery);
+
+    const travelsList = travelsSnapshot.docs.map(doc => ({
+      travel_id: doc.id,
+      ...doc.data()
+    }));
+    return travelsList;
+  } catch (error) {
+    console.error('Erro ao listar viagens: ', error);
+  }
+};
+
+export { listUsers, getTravelsByUser, getTravelById, getPostsByTravel, getPostById, searchTravels };

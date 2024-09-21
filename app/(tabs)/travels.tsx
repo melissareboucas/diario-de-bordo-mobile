@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 
-import { getTravelsByUser } from '../../data/retrieveData'
+import { getTravelsByUser, searchTravels } from '../../data/retrieveData'
 import { addTravel } from '../../data/insertData'
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -80,6 +80,8 @@ export default function Travels() {
   const [destinycity, setDestinyCity] = useState('');
   const [description, setDescription] = useState('');
 
+  const [deleteSearchIcon, setDeleteSearchIcon] = useState(false);
+
 
 
   useEffect(() => {
@@ -101,9 +103,34 @@ export default function Travels() {
     }
   }, [isFocused]);
 
-  const handleSearch = (text: string) => {
+  const handleSearchText = (text: string) => {
     setSearchText(text);
+    setDeleteSearchIcon(true)
+  }
+
+  const handleSearch = (text: string) => {
+    const fetchFilteredTravels = async () => {
+      try {
+        setLoading(true);
+        const travelsList = await searchTravels('ayXVaqgFJZ4sBgoLKW29', text);
+        setTravels(travelsList || []);
+      } catch (error) {
+        console.error('Error fetching travels:', error);
+      } finally {
+        setLoading(false);
+      }
+
+    };
+
+    fetchFilteredTravels();
   };
+
+  const deleteSearch = () => {
+    setSearchText("");
+    setDeleteSearchIcon(false)
+    onRefresh();
+  }
+
 
   const handleOriginCity = (text: string) => {
     setOriginCity(text);
@@ -127,10 +154,10 @@ export default function Travels() {
       };
 
       fetchTravels();
+      setSearchText('')
       setRefreshing(false);
     }, 2000);
   }, [travels]);
-
 
 
   const renderTravelCard: ListRenderItem<travelData> = ({ item }) => (
@@ -328,14 +355,26 @@ export default function Travels() {
         </View>
 
         <View style={styles.searchContainer}>
-          <MaterialIcons size={28} name='search' color={'#45B3AF'} />
+
           <TextInput
             style={styles.searchBar}
-            placeholder='Buscar viagem'
+            placeholder='Buscar por cidade de destino'
             placeholderTextColor='#45B3AF'
             value={searchText}
-            onChangeText={handleSearch}
+            onChangeText={handleSearchText}
           />
+          <View style={styles.searchItem}>
+            {deleteSearchIcon && 
+            <TouchableOpacity
+              onPress={() => deleteSearch()}>
+              <MaterialIcons size={28} name='close' color={'#45B3AF'} />
+            </TouchableOpacity>
+            }
+            <TouchableOpacity
+              onPress={() => handleSearch(searchText)}>
+              <MaterialIcons size={28} name='search' color={'#45B3AF'} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {loading && (
@@ -511,10 +550,16 @@ const styles = StyleSheet.create({
     marginTop: 5,
     marginLeft: 30,
     marginRight: 30,
-    marginBottom: 10
+    marginBottom: 10,
+    justifyContent: 'space-between'
   },
   searchBar: {
-    color: '#196966'
+    color: '#196966',
+    marginLeft: 10
+  },
+  searchItem: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end'
   },
   cardContainer: {
     margin: 5,
