@@ -200,6 +200,10 @@ export default function Travels() {
     };
 
     addTravel(newTravel);
+    setOriginCity("")
+    setDestinyCity("")
+    setDescription("")
+    onRefresh();
     setModalCreateTravelVisible(false)
   };
 

@@ -1,4 +1,5 @@
-import { ActivityIndicator, FlatList, ListRenderItem, Modal, RefreshControl, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, ListRenderItem, Modal, RefreshControl, SafeAreaView, 
+  ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Image } from 'react-native';
 
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -10,8 +11,8 @@ import { deletePostById, deleteTravelById } from '@/data/deleteData';
 
 import { useNavigation } from '@react-navigation/native';
 import { addPost } from '@/data/insertData';
-import { updatePost } from '@/data/updateData';
-
+import { updatePost, updateTravel } from '@/data/updateData';
+import DropDownPicker from 'react-native-dropdown-picker';
 
 
 interface postData {
@@ -29,6 +30,24 @@ interface insertPostData {
   post_text: string,
   title: string,
   post_date: Timestamp,
+}
+
+interface travelData {
+  travel_id: string,
+  user_id: string,
+  origincity: string,
+  origincountry: string,
+  originlatitude: number,
+  originlongitude: number,
+  destinycity: string,
+  destinycountry: string,
+  destinylatitude: number,
+  destinylongitude: number,
+  distanceinmeters: number,
+  modal: string,
+  travel_image: string,
+  date: Timestamp,
+  description: string
 }
 
 
@@ -52,6 +71,20 @@ export default function Posts() {
 
   const [selectedPostId, setSelectedPostId] = useState<string>('000');
   const [selectedPost, setSelectedPost] = useState<any[]>([]);
+
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(null);
+  const [items, setItems] = useState([
+    { label: 'Avião', value: 'Avião' },
+    { label: 'Navio', value: 'Navio' },
+    { label: 'Trem', value: 'Trem' },
+    { label: 'Ônibus', value: 'Ônibus' },
+    { label: 'Carro', value: 'Carro' },
+    { label: 'Moto', value: 'Moto' },
+    { label: 'Bicicleta', value: 'Bicicleta' },
+    { label: 'Caminhando', value: 'Caminhando' },
+    { label: 'Outros', value: 'Outros' }
+  ]);
 
   const navigation = useNavigation();
 
@@ -94,7 +127,7 @@ export default function Posts() {
   }, [travel_id])
 
   useEffect(() => {
- 
+
     const fetchPost = async () => {
       try {
         const postDetails = await getPostById(selectedPostId);
@@ -158,11 +191,11 @@ export default function Posts() {
   const handleEditTitle = (text: string) => {
     setSelectedPost(prevPosts => {
       if (prevPosts.length > 0) {
- 
+
         const updatedPost = { ...prevPosts[0], title: text };
         setTitle(text);
         setPostText(prevPosts[0].post_text);
-        return [updatedPost]; 
+        return [updatedPost];
       }
       return prevPosts;
     });
@@ -171,13 +204,13 @@ export default function Posts() {
   const handleEditPostText = (text: string) => {
     setSelectedPost(prevPosts => {
       if (prevPosts.length > 0) {
-      
+
         const updatedPost = { ...prevPosts[0], post_text: text };
         setPostText(text);
         setTitle(prevPosts[0].title);
-        return [updatedPost]; 
+        return [updatedPost];
       }
-      return prevPosts; 
+      return prevPosts;
     });
   };
 
@@ -205,9 +238,63 @@ export default function Posts() {
     setEditPostModal(false)
   }
 
+  const handleEditOriginCity = (text: string) => {
+    setTravel(prevPosts => {
+      if (prevPosts.length > 0) {
+
+        const updatedTravel = { ...prevPosts[0], origincity: text };
+        return [updatedTravel];
+      }
+      return prevPosts;
+    });
+  };
+
   
+  const handleEditDestinyCity = (text: string) => {
+    setTravel(prevPosts => {
+      if (prevPosts.length > 0) {
 
+        const updatedTravel = { ...prevPosts[0], destinycity: text };
+        return [updatedTravel];
+      }
+      return prevPosts;
+    });
+  };
 
+  const handleEditDescriptionCity = (text: string) => {
+    setTravel(prevPosts => {
+      if (prevPosts.length > 0) {
+
+        const updatedTravel = { ...prevPosts[0], description: text };
+        return [updatedTravel];
+      }
+      return prevPosts;
+    });
+  };
+
+  const handleEditTravel = (travel_id: string) => {
+    const updatedTravel: travelData = {
+      travel_id: travel_id,
+      user_id: travel[0].user_id,
+      origincity: travel[0].origincity,
+      origincountry: travel[0].origincountry,
+      originlatitude: travel[0].originlatitude,
+      originlongitude: travel[0].originlongitude,
+      destinycity: travel[0].destinycity,
+      destinycountry: travel[0].destinycountry,
+      destinylatitude: travel[0].destinylatitude,
+      destinylongitude: travel[0].destinylongitude,
+      distanceinmeters: travel[0].distanceinmeters,
+      modal: value?value:'',
+      travel_image: travel[0].travel_image,
+      date: Timestamp.fromDate(new Date()), // Data atual,
+      description: travel[0].description
+    };
+
+    updateTravel(updatedTravel, travel_id);
+    onRefresh();
+    setEditModal(false)
+  }
 
   const renderPostCard: ListRenderItem<postData> = ({ item }) => (
     <View key={item.post_id} style={styles.cardContainer}>
@@ -219,6 +306,8 @@ export default function Posts() {
           </Text>
 
           <View style={styles.cardLocation}>
+
+            {/*edit post */}
             <TouchableOpacity
               onPress={() => {
                 setSelectedPostId(item.post_id);
@@ -289,6 +378,7 @@ export default function Posts() {
               }
             </Modal>
 
+            {/*delete post */}
             <TouchableOpacity
               onPress={() => {
                 setSelectedPostId(item.post_id);
@@ -338,6 +428,7 @@ export default function Posts() {
                 </View>
               </View>
             </Modal>
+
           </View>
         </View>
 
@@ -373,130 +464,222 @@ export default function Posts() {
             <View style={styles.header}>
 
               {travel.length > 0 &&
-                <View style={styles.headerDetails}>
+                <>
+                  <View style={styles.headerDetails}>
 
-                  <Text style={styles.headerText}>
+                    <Text style={styles.headerText}>
 
-                    {travel[0].destinycity}, {travel[0].destinycountry}
+                      {travel[0].destinycity}, {travel[0].destinycountry}
 
-                  </Text>
+                    </Text>
 
-                  <Text style={styles.headerDate}>
-                    {travel[0].date.toDate().toLocaleDateString()}
-                  </Text>
-                </View>
+                    <Text style={styles.headerDate}>
+                      {travel[0].date.toDate().toLocaleDateString()}
+                    </Text>
+                  </View>
+
+                  {/*edit travel */}
+                  <TouchableOpacity
+                    onPress={() => setEditModal(true)}
+                  >
+                    <MaterialIcons size={28} name='edit' color={'#45B3AF'} />
+                  </TouchableOpacity>
+                  <Modal
+                    animationType="fade"
+                    transparent={true}
+                    visible={editModal}
+                    onRequestClose={() => setEditModal(false)}
+                  >
+                    <View style={styles.modalOverlay}>
+                      <View style={styles.modalContent}>
+                        <Text style={styles.modalText}>
+                          Como foi sua viagem?
+                        </Text>
+
+                        <TextInput
+                          style={styles.modalInputText}
+                          placeholder='Cidade de origem da viagem'
+                          placeholderTextColor='#45B3AF'
+                          value={travel[0].origincity}
+                          onChangeText={handleEditOriginCity}
+                        />
+
+                        <TextInput
+                          style={styles.modalInputText}
+                          placeholder='Cidade de destino da viagem'
+                          placeholderTextColor='#45B3AF'
+                          value={travel[0].destinycity}
+                          onChangeText={handleEditDestinyCity}
+                        />
+
+                        <DropDownPicker
+                          open={open}
+                          value={value}
+                          items={items}
+                          setOpen={setOpen}
+                          setValue={setValue}
+                          setItems={setItems}
+                          placeholder="Modalidade"
+                          style={styles.modalPicker}
+                          textStyle={styles.modalDropdownText}
+                          dropDownContainerStyle={styles.mdoalDropDownContainer}
+                          ArrowUpIconComponent={() => (
+                            <MaterialIcons size={28} name='keyboard-arrow-up' color='#45B3AF' />
+                          )}
+                          ArrowDownIconComponent={() => (
+                            <MaterialIcons size={28} name='keyboard-arrow-down' color='#45B3AF' />
+                          )}
+                        />
+
+                        <TextInput
+                          style={styles.modalInputDescriptionText}
+                          placeholder='Descrição'
+                          placeholderTextColor='#45B3AF'
+                          multiline
+                          textAlignVertical="top"
+                          value={travel[0].description}
+                          onChangeText={handleEditDescriptionCity}
+                        />
+
+                        <TouchableOpacity>
+                          <Image
+                            style={styles.modalImage}
+                            source={require('../../assets/images/addImage.png')}
+                          />
+                        </TouchableOpacity>
+
+                        <View style={styles.modalButtons}>
+
+                          <TouchableOpacity
+                            style={styles.modalCancelButton}
+                            onPress={() => setEditModal(false)}>
+                            <Text style={styles.modalCancelButtonText}>
+                              Cancelar
+                            </Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            style={styles.modalAddButton}
+                            onPress={() => handleEditTravel(travel_id)}>
+                            <Text style={styles.modalAddButtonText}>
+                              Salvar
+                            </Text>
+                          </TouchableOpacity>
+
+                        </View>
+
+                      </View>
+                    </View>
+                  </Modal>
+
+                  {/*delete travel */}
+                  <TouchableOpacity
+                    onPress={() => setDeleteModal(true)}
+                  >
+                    <MaterialIcons size={28} name='delete' color={'#45B3AF'} />
+                  </TouchableOpacity>
+                  <Modal
+                    animationType="fade"
+                    transparent={true}
+                    visible={deleteModal}
+                    onRequestClose={() => setDeleteModal(false)}
+                  >
+                    <View style={styles.modalOverlay}>
+                      <View style={styles.modalContent}>
+                        <Text style={styles.modalText}>
+                          Deseja deletar essa viagem?
+                        </Text>
+
+                        <View style={styles.modalButtons}>
+
+                          <TouchableOpacity
+                            style={styles.modalCancelButton}
+                            onPress={() => setDeleteModal(false)}>
+                            <Text style={styles.modalCancelButtonText}>
+                              Cancelar
+                            </Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            style={styles.modalAddButton}
+                            onPress={() => handleDeleteTravel()}>
+                            <Text style={styles.modalAddButtonText}>
+                              Deletar
+                            </Text>
+                          </TouchableOpacity>
+
+                        </View>
+
+                      </View>
+                    </View>
+                  </Modal>
+
+                  {/*add a post */}
+                  <TouchableOpacity
+                    onPress={() => {
+                      setTitle("")
+                      setPostText("")
+                      setAddModal(true)
+
+                    }}
+                  >
+                    <MaterialIcons size={28} name='add-circle' color={'#45B3AF'} />
+                  </TouchableOpacity>
+                  <Modal
+                    animationType="fade"
+                    transparent={true}
+                    visible={addModal}
+                    onRequestClose={() => setAddModal(false)}
+                  >
+                    <View style={styles.modalOverlay}>
+                      <View style={styles.modalContent}>
+                        <Text style={styles.modalText}>
+                          Como foi seu dia?
+                        </Text>
+
+                        <TextInput
+                          style={styles.modalInputText}
+                          placeholder='Título'
+                          placeholderTextColor='#45B3AF'
+                          value={title}
+                          onChangeText={handleTitle}
+                        />
+
+                        <TextInput
+                          style={styles.modalInputPostText}
+                          placeholder='Conta aí como foi seu dia...'
+                          placeholderTextColor='#45B3AF'
+                          multiline
+                          textAlignVertical="top"
+                          value={postText}
+                          onChangeText={handlePostText}
+                        />
+
+                        <View style={styles.modalButtons}>
+
+                          <TouchableOpacity
+                            style={styles.modalCancelButton}
+                            onPress={() => setAddModal(false)}>
+                            <Text style={styles.modalCancelButtonText}>
+                              Cancelar
+                            </Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            style={styles.modalAddButton}
+                            onPress={() => handleCreatePost()}>
+                            <Text style={styles.modalAddButtonText}>
+                              Adicionar
+                            </Text>
+                          </TouchableOpacity>
+
+                        </View>
+
+                      </View>
+                    </View>
+                  </Modal>
+                </>
               }
-              <TouchableOpacity
-                onPress={() => setEditModal(true)}
-              >
-                <MaterialIcons size={28} name='edit' color={'#45B3AF'} />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setDeleteModal(true)}
-              >
-                <MaterialIcons size={28} name='delete' color={'#45B3AF'} />
-              </TouchableOpacity>
-              <Modal
-                animationType="fade"
-                transparent={true}
-                visible={deleteModal}
-                onRequestClose={() => setDeleteModal(false)}
-              >
-                <View style={styles.modalOverlay}>
-                  <View style={styles.modalContent}>
-                    <Text style={styles.modalText}>
-                      Deseja deletar essa viagem?
-                    </Text>
-
-                    <View style={styles.modalButtons}>
-
-                      <TouchableOpacity
-                        style={styles.modalCancelButton}
-                        onPress={() => setDeleteModal(false)}>
-                        <Text style={styles.modalCancelButtonText}>
-                          Cancelar
-                        </Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={styles.modalAddButton}
-                        onPress={() => handleDeleteTravel()}>
-                        <Text style={styles.modalAddButtonText}>
-                          Deletar
-                        </Text>
-                      </TouchableOpacity>
-
-                    </View>
-
-                  </View>
-                </View>
-              </Modal>
-
-              <TouchableOpacity
-                onPress={() => {
-                  setTitle("")
-                  setPostText("")
-                  setAddModal(true)
-
-                }}
-              >
-                <MaterialIcons size={28} name='add-circle' color={'#45B3AF'} />
-              </TouchableOpacity>
-              <Modal
-                animationType="fade"
-                transparent={true}
-                visible={addModal}
-                onRequestClose={() => setAddModal(false)}
-              >
-                <View style={styles.modalOverlay}>
-                  <View style={styles.modalContent}>
-                    <Text style={styles.modalText}>
-                      Como foi seu dia?
-                    </Text>
-
-                    <TextInput
-                      style={styles.modalInputText}
-                      placeholder='Título'
-                      placeholderTextColor='#45B3AF'
-                      value={title}
-                      onChangeText={handleTitle}
-                    />
-
-                    <TextInput
-                      style={styles.modalInputPostText}
-                      placeholder='Conta aí como foi seu dia...'
-                      placeholderTextColor='#45B3AF'
-                      multiline
-                      textAlignVertical="top"
-                      value={postText}
-                      onChangeText={handlePostText}
-                    />
-
-                    <View style={styles.modalButtons}>
-
-                      <TouchableOpacity
-                        style={styles.modalCancelButton}
-                        onPress={() => setAddModal(false)}>
-                        <Text style={styles.modalCancelButtonText}>
-                          Cancelar
-                        </Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={styles.modalAddButton}
-                        onPress={() => handleCreatePost()}>
-                        <Text style={styles.modalAddButtonText}>
-                          Adicionar
-                        </Text>
-                      </TouchableOpacity>
-
-                    </View>
-
-                  </View>
-                </View>
-              </Modal>
-
             </View>
 
           </View>
@@ -603,6 +786,19 @@ const styles = StyleSheet.create({
 
   },
   modalInputPostText: {
+    borderWidth: 1,
+    borderColor: '#45B3AF',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    paddingLeft: 10,
+    paddingRight: 10,
+    paddingTop: 10,
+    margin: 5,
+    width: 250,
+    height: 150,
+    color: '#45B3AF'
+  },
+  modalInputDescriptionText: {
     borderWidth: 1,
     borderColor: '#45B3AF',
     backgroundColor: 'white',

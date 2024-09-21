@@ -26,6 +26,15 @@ interface postData {
     post_date: Timestamp;
 }
 
+const updateTravel = async (travel: travelData, travel_id: string) => {
+    try {
+        const travelRef = doc(db, 'travels', travel_id);
+        await updateDoc(travelRef, travel as { [key: string]: any });
+    } catch (e) {
+        console.error('Error adding document: ', e);
+    }
+};
+
 const updatePost = async (post: postData, post_id: string) => {
     try {
         const postRef = doc(db, 'posts', post_id);
@@ -35,4 +44,4 @@ const updatePost = async (post: postData, post_id: string) => {
     }
 };
 
-export { updatePost };
+export { updatePost, updateTravel };
