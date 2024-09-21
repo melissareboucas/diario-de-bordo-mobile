@@ -6,7 +6,7 @@ import { getPostsByTravel, getTravelById } from '@/data/retrieveData';
 import { Timestamp } from 'firebase/firestore';
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { deleteTravelById } from '@/data/deleteData';
+import { deletePostById, deleteTravelById } from '@/data/deleteData';
 
 import { useNavigation } from '@react-navigation/native';
 import { addPost } from '@/data/insertData';
@@ -48,6 +48,8 @@ export default function Posts() {
   const [editPostModal, setEditPostModal] = useState(false);
   const [deletePostModal, setDeletePostModal] = useState(false);
   const [addModal, setAddModal] = useState(false);
+
+  const [selectedPostId, setSelectedPostId] = useState<string>('000');
 
   const navigation = useNavigation();
 
@@ -138,27 +140,80 @@ export default function Posts() {
     setPostText(text);
   };
 
+  const handleDeletePost = (postId: string) => {
+    deletePostById(postId);
+    onRefresh();
+    setDeletePostModal(false)
+  };
+
   const renderPostCard: ListRenderItem<postData> = ({ item }) => (
     <View key={item.post_id} style={styles.cardContainer}>
       <View style={styles.card}>
 
         <View style={styles.cardHeader}>
           <Text style={styles.cardHeaderText}>
-            {item.title}
+            {item.title}, {item.post_id}
           </Text>
 
           <View style={styles.cardLocation}>
             <TouchableOpacity
-              onPress={() => setEditPostModal(true)}
+              onPress={() => {
+                setSelectedPostId(item.post_id);
+                setEditPostModal(true);
+              }}
             >
               <MaterialIcons size={24} name='edit' color={'#45B3AF'} />
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => setDeletePostModal(true)}
+              onPress={() => {
+                setSelectedPostId(item.post_id);
+                setDeletePostModal(true);
+              }}
             >
               <MaterialIcons size={24} name='delete' color={'#45B3AF'} />
             </TouchableOpacity>
+            <Modal
+              animationType="fade"
+              transparent={true}
+              visible={deletePostModal}
+              onRequestClose={() => {
+                setSelectedPostId('000');
+                setDeletePostModal(false);
+              }}
+            >
+              <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                  <Text style={styles.modalText}>
+                    Deseja deletar esse diário?, {selectedPostId}  
+                  </Text>
+
+                  <View style={styles.modalButtons}>
+
+                    <TouchableOpacity
+                      style={styles.modalCancelButton}
+                      onPress={() => {
+                        setSelectedPostId('000');
+                        setDeletePostModal(false);
+                      }}>
+                      <Text style={styles.modalCancelButtonText}>
+                        Cancelar
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.modalAddButton}
+                      onPress={() => handleDeletePost(selectedPostId)}>
+                      <Text style={styles.modalAddButtonText}>
+                        Deletar
+                      </Text>
+                    </TouchableOpacity>
+
+                  </View>
+
+                </View>
+              </View>
+            </Modal>
           </View>
         </View>
 

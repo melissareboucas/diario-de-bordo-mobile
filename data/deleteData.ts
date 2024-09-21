@@ -26,7 +26,16 @@ const deleteTravelById = async (travel_id: string) => {
   }
 };
 
+const deletePostById = async (post_id: string) => {
+  try {
+    const postRef = doc(db, 'posts', post_id);
+    await deleteDoc(postRef);
+  } catch (error) {
+    console.error('Erro ao deletar: ', error);
+  }
+};
 
 
 
-export { deleteTravelById };
+
+export { deleteTravelById, deletePostById };
