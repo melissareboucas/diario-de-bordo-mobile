@@ -2,7 +2,7 @@ import { ActivityIndicator, FlatList, ListRenderItem, Modal, RefreshControl, Saf
 
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { getPostsByTravel, getTravelById } from '@/data/retrieveData';
+import { getPostsByTravel, getTravelById, getPostById } from '@/data/retrieveData';
 import { Timestamp } from 'firebase/firestore';
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -10,6 +10,7 @@ import { deletePostById, deleteTravelById } from '@/data/deleteData';
 
 import { useNavigation } from '@react-navigation/native';
 import { addPost } from '@/data/insertData';
+import { updatePost } from '@/data/updateData';
 
 
 
@@ -50,6 +51,7 @@ export default function Posts() {
   const [addModal, setAddModal] = useState(false);
 
   const [selectedPostId, setSelectedPostId] = useState<string>('000');
+  const [selectedPost, setSelectedPost] = useState<any[]>([]);
 
   const navigation = useNavigation();
 
@@ -90,6 +92,23 @@ export default function Posts() {
     fetchTravel();
 
   }, [travel_id])
+
+  useEffect(() => {
+ 
+    const fetchPost = async () => {
+      try {
+        const postDetails = await getPostById(selectedPostId);
+        setSelectedPost(postDetails || []);
+
+      } catch (error) {
+        console.error('Error fetching post:', error);
+      }
+
+    };
+
+    fetchPost();
+
+  }, [selectedPostId])
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -136,6 +155,32 @@ export default function Posts() {
     setTitle(text);
   };
 
+  const handleEditTitle = (text: string) => {
+    setSelectedPost(prevPosts => {
+      if (prevPosts.length > 0) {
+ 
+        const updatedPost = { ...prevPosts[0], title: text };
+        setTitle(text);
+        setPostText(prevPosts[0].post_text);
+        return [updatedPost]; 
+      }
+      return prevPosts;
+    });
+  };
+
+  const handleEditPostText = (text: string) => {
+    setSelectedPost(prevPosts => {
+      if (prevPosts.length > 0) {
+      
+        const updatedPost = { ...prevPosts[0], post_text: text };
+        setPostText(text);
+        setTitle(prevPosts[0].title);
+        return [updatedPost]; 
+      }
+      return prevPosts; 
+    });
+  };
+
   const handlePostText = (text: string) => {
     setPostText(text);
   };
@@ -146,13 +191,31 @@ export default function Posts() {
     setDeletePostModal(false)
   };
 
+  const handleEditPost = (postId: string) => {
+    const updatedPost: insertPostData = {
+      user_id: 'ayXVaqgFJZ4sBgoLKW29',
+      travel_id: travel_id,
+      post_date: Timestamp.fromDate(new Date()), // Data atual
+      title: title,
+      post_text: postText
+    };
+
+    updatePost(updatedPost, postId);
+    onRefresh();
+    setEditPostModal(false)
+  }
+
+  
+
+
+
   const renderPostCard: ListRenderItem<postData> = ({ item }) => (
     <View key={item.post_id} style={styles.cardContainer}>
       <View style={styles.card}>
 
         <View style={styles.cardHeader}>
           <Text style={styles.cardHeaderText}>
-            {item.title}, {item.post_id}
+            {item.title}
           </Text>
 
           <View style={styles.cardLocation}>
@@ -164,6 +227,67 @@ export default function Posts() {
             >
               <MaterialIcons size={24} name='edit' color={'#45B3AF'} />
             </TouchableOpacity>
+            <Modal
+              animationType="fade"
+              transparent={true}
+              visible={editPostModal}
+              onRequestClose={() => {
+                setSelectedPostId('000');
+                setEditPostModal(false);
+              }}
+            >
+              {selectedPost.length > 0 &&
+                <View style={styles.modalOverlay}>
+                  <View style={styles.modalContent}>
+                    <Text style={styles.modalText}>
+                      Como foi seu dia?
+                    </Text>
+
+                    <TextInput
+                      style={styles.modalInputText}
+                      placeholder='Título'
+                      placeholderTextColor='#45B3AF'
+                      value={selectedPost[0].title}
+                      onChangeText={handleEditTitle}
+                    />
+
+                    <TextInput
+                      style={styles.modalInputPostText}
+                      placeholder='Conta aí como foi seu dia...'
+                      placeholderTextColor='#45B3AF'
+                      multiline
+                      textAlignVertical="top"
+                      value={selectedPost[0].post_text}
+                      onChangeText={handleEditPostText}
+                    />
+
+                    <View style={styles.modalButtons}>
+
+                      <TouchableOpacity
+                        style={styles.modalCancelButton}
+                        onPress={() => {
+                          setSelectedPostId('000');
+                          setEditPostModal(false);
+                        }}>
+                        <Text style={styles.modalCancelButtonText}>
+                          Cancelar
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.modalAddButton}
+                        onPress={() => handleEditPost(selectedPostId)}>
+                        <Text style={styles.modalAddButtonText}>
+                          Salvar
+                        </Text>
+                      </TouchableOpacity>
+
+                    </View>
+
+                  </View>
+                </View>
+              }
+            </Modal>
 
             <TouchableOpacity
               onPress={() => {
@@ -185,7 +309,7 @@ export default function Posts() {
               <View style={styles.modalOverlay}>
                 <View style={styles.modalContent}>
                   <Text style={styles.modalText}>
-                    Deseja deletar esse diário?, {selectedPostId}  
+                    Deseja deletar esse diário?
                   </Text>
 
                   <View style={styles.modalButtons}>
@@ -310,7 +434,12 @@ export default function Posts() {
               </Modal>
 
               <TouchableOpacity
-                onPress={() => setAddModal(true)}
+                onPress={() => {
+                  setTitle("")
+                  setPostText("")
+                  setAddModal(true)
+
+                }}
               >
                 <MaterialIcons size={28} name='add-circle' color={'#45B3AF'} />
               </TouchableOpacity>

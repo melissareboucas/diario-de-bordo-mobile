@@ -76,5 +76,24 @@ const getPostsByTravel = async (travel_id: string) => {
   }
 };
 
+const getPostById = async (post_id: string) => {
+  try {
+    const postsCollection = collection(db, 'posts');
 
-export { listUsers, getTravelsByUser, getTravelById, getPostsByTravel };
+    const postQuery = query(postsCollection, where("__name__", "==", post_id))
+
+    const postSnapshot = await getDocs(postQuery);
+
+    const post = postSnapshot.docs.map(doc => ({
+      post_id: doc.id,
+      ...doc.data()
+    }));
+    
+    return post;
+  } catch (error) {
+    console.error('Erro ao listar diário: ', error);
+  }
+};
+
+
+export { listUsers, getTravelsByUser, getTravelById, getPostsByTravel, getPostById };
