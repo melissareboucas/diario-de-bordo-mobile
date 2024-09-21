@@ -1,4 +1,4 @@
-import { ActivityIndicator, FlatList, ListRenderItem, Modal, RefreshControl, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, ListRenderItem, Modal, RefreshControl, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -9,6 +9,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { deleteTravelById } from '@/data/deleteData';
 
 import { useNavigation } from '@react-navigation/native';
+import { addPost } from '@/data/insertData';
 
 
 
@@ -21,6 +22,14 @@ interface postData {
   post_date: Timestamp
 }
 
+interface insertPostData {
+  user_id: string,
+  travel_id: string,
+  post_text: string,
+  title: string,
+  post_date: Timestamp,
+}
+
 
 export default function Posts() {
   const { id } = useLocalSearchParams();
@@ -31,8 +40,13 @@ export default function Posts() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [postText, setPostText] = useState('');
+  const [title, setTitle] = useState('');
+
   const [editModal, setEditModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
+  const [editPostModal, setEditPostModal] = useState(false);
+  const [deletePostModal, setDeletePostModal] = useState(false);
   const [addModal, setAddModal] = useState(false);
 
   const navigation = useNavigation();
@@ -102,15 +116,49 @@ export default function Posts() {
     setDeleteModal(false)
   };
 
+  const handleCreatePost = () => {
+    const newPost: insertPostData = {
+      user_id: 'ayXVaqgFJZ4sBgoLKW29',
+      travel_id: travel_id,
+      post_text: postText,
+      title: title,
+      post_date: Timestamp.fromDate(new Date()), // Data atual
+    };
+
+    addPost(newPost);
+    onRefresh();
+    setAddModal(false)
+  };
+
+  const handleTitle = (text: string) => {
+    setTitle(text);
+  };
+
+  const handlePostText = (text: string) => {
+    setPostText(text);
+  };
+
   const renderPostCard: ListRenderItem<postData> = ({ item }) => (
     <View key={item.post_id} style={styles.cardContainer}>
       <View style={styles.card}>
 
         <View style={styles.cardHeader}>
+          <Text style={styles.cardHeaderText}>
+            {item.title}
+          </Text>
+
           <View style={styles.cardLocation}>
-            <Text style={styles.cardHeaderText}>
-              {item.title}
-            </Text>
+            <TouchableOpacity
+              onPress={() => setEditPostModal(true)}
+            >
+              <MaterialIcons size={24} name='edit' color={'#45B3AF'} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setDeletePostModal(true)}
+            >
+              <MaterialIcons size={24} name='delete' color={'#45B3AF'} />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -211,6 +259,59 @@ export default function Posts() {
               >
                 <MaterialIcons size={28} name='add-circle' color={'#45B3AF'} />
               </TouchableOpacity>
+              <Modal
+                animationType="fade"
+                transparent={true}
+                visible={addModal}
+                onRequestClose={() => setAddModal(false)}
+              >
+                <View style={styles.modalOverlay}>
+                  <View style={styles.modalContent}>
+                    <Text style={styles.modalText}>
+                      Como foi seu dia?
+                    </Text>
+
+                    <TextInput
+                      style={styles.modalInputText}
+                      placeholder='Título'
+                      placeholderTextColor='#45B3AF'
+                      value={title}
+                      onChangeText={handleTitle}
+                    />
+
+                    <TextInput
+                      style={styles.modalInputPostText}
+                      placeholder='Conta aí como foi seu dia...'
+                      placeholderTextColor='#45B3AF'
+                      multiline
+                      textAlignVertical="top"
+                      value={postText}
+                      onChangeText={handlePostText}
+                    />
+
+                    <View style={styles.modalButtons}>
+
+                      <TouchableOpacity
+                        style={styles.modalCancelButton}
+                        onPress={() => setAddModal(false)}>
+                        <Text style={styles.modalCancelButtonText}>
+                          Cancelar
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.modalAddButton}
+                        onPress={() => handleCreatePost()}>
+                        <Text style={styles.modalAddButtonText}>
+                          Adicionar
+                        </Text>
+                      </TouchableOpacity>
+
+                    </View>
+
+                  </View>
+                </View>
+              </Modal>
 
             </View>
 
@@ -317,7 +418,7 @@ const styles = StyleSheet.create({
     borderColor: '#45B3AF',
 
   },
-  modalInputDescriptionText: {
+  modalInputPostText: {
     borderWidth: 1,
     borderColor: '#45B3AF',
     backgroundColor: 'white',
@@ -371,6 +472,7 @@ const styles = StyleSheet.create({
 
   cardContainer: {
     margin: 5,
+
   },
   card: {
     borderWidth: 1,
@@ -393,7 +495,7 @@ const styles = StyleSheet.create({
     paddingTop: 3
   },
   cardContent: {
-    justifyContent: 'flex-start'
+    //justifyContent: 'flex-start'
   },
   cardHeader: {
     flexDirection: 'row',
@@ -402,6 +504,7 @@ const styles = StyleSheet.create({
   cardLocation: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 3
   },
   cardHeaderText: {
     fontSize: 15,
@@ -411,13 +514,12 @@ const styles = StyleSheet.create({
   cardDate: {
     fontSize: 15,
     color: '#196966',
-    marginLeft: 28,
     marginTop: 5
   },
   cardDescription: {
     fontSize: 20,
     color: '#45B3AF',
-    margin: 10,
+    marginTop: 10,
     textAlign: 'justify'
   },
   cardImage: {
