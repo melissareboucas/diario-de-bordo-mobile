@@ -3,10 +3,11 @@ import {
   StyleSheet, SafeAreaView, ScrollView, StatusBar,
   Image, View, Text, FlatList, TouchableOpacity, Modal,
   TextInput, ListRenderItem, RefreshControl,
-  ActivityIndicator,
-  Pressable
+  ActivityIndicator
 } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
+
+import * as ImagePicker from 'expo-image-picker';
 
 import { getTravelsByUser, searchTravels } from '../../data/retrieveData'
 import { addTravel } from '../../data/insertData'
@@ -16,6 +17,10 @@ import { Timestamp } from 'firebase/firestore';
 import { Link } from 'expo-router';
 
 import { useIsFocused } from '@react-navigation/native';
+
+import { storage } from '@/firebaseConfig';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
 
 
 interface travelData {
@@ -79,6 +84,8 @@ export default function Travels() {
   const [origincity, setOriginCity] = useState('');
   const [destinycity, setDestinyCity] = useState('');
   const [description, setDescription] = useState('');
+  const [localImage, setLocalImage] = useState('');
+  const [travelImage, setTravelImage] = useState('');
 
   const [deleteSearchIcon, setDeleteSearchIcon] = useState(false);
 
@@ -144,6 +151,35 @@ export default function Travels() {
     setDescription(text);
   };
 
+
+
+  // Função para abrir a galeria e selecionar a imagem
+  const pickImage = async () => {
+    // Solicitar permissão para acessar a galeria
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      console.log("sem acesso")
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      const uri = result.assets[0].uri;
+      setLocalImage(result.assets[0].uri);
+
+    }
+
+  }
+
+  // Função para fazer upload da imagem selecionada no Firebase Storage
+
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
 
@@ -203,35 +239,62 @@ export default function Travels() {
           source={{ uri: item.travel_image }}
           style={styles.cardImage}
         />
+        
 
       </View>
     </View>
   )
 
   const handleCreateTravel = () => {
-    const newTravel: insertTravelData = {
-      user_id: 'ayXVaqgFJZ4sBgoLKW29',
-      origincity: origincity,
-      origincountry: 'Brasil',
-      originlatitude: -23.5505,
-      originlongitude: -46.6333,
-      destinycity: destinycity,
-      destinycountry: 'Brasil',
-      destinylatitude: -22.9068,
-      destinylongitude: -43.1729,
-      distanceinmeters: 429000,
-      modal: value ?? 'avião',
-      travel_image: 'https://static.mundoeducacao.uol.com.br/mundoeducacao/2021/03/1-cristo-redentor.jpg',
-      date: Timestamp.fromDate(new Date()), // Data atual
-      description: description,
+
+    const uploadImage = async (localImage: string) => {
+      const response = await fetch(localImage);
+      const blob = await response.blob();
+
+
+      const storageRef = ref(storage, `images/${Date.now()}.jpg`);
+
+      uploadBytes(storageRef, blob)
+        .then(async (snapshot) => {
+          const downloadURL = await getDownloadURL(snapshot.ref);
+          return downloadURL; // Retornamos o downloadURL para o próximo .then
+        })
+        .then((downloadURL) => {
+          setTravelImage(downloadURL)
+          const newTravel: insertTravelData = {
+            user_id: 'ayXVaqgFJZ4sBgoLKW29',
+            origincity: origincity,
+            origincountry: 'Brasil',
+            originlatitude: -23.5505,
+            originlongitude: -46.6333,
+            destinycity: destinycity,
+            destinycountry: 'Brasil',
+            destinylatitude: -22.9068,
+            destinylongitude: -43.1729,
+            distanceinmeters: 429000,
+            modal: value ?? 'avião',
+            travel_image: downloadURL,
+            date: Timestamp.fromDate(new Date()), // Data atual
+            description: description,
+          };
+          addTravel(newTravel);
+          setOriginCity("")
+          setDestinyCity("")
+          setDescription("")
+          setLocalImage("")
+          setTravelImage("")
+          setValue(null)
+          onRefresh();
+          setModalCreateTravelVisible(false)
+        })
+        .catch((error) => {
+          console.error("Erro ao fazer upload:", error);
+        });
     };
 
-    addTravel(newTravel);
-    setOriginCity("")
-    setDestinyCity("")
-    setDescription("")
-    onRefresh();
-    setModalCreateTravelVisible(false)
+    uploadImage(localImage);
+
+
   };
 
 
@@ -319,11 +382,15 @@ export default function Travels() {
                     onChangeText={handleDescription}
                   />
 
-                  <TouchableOpacity>
-                    <Image
+                  <TouchableOpacity
+                    onPress={pickImage}
+                  >
+                    {localImage && <Image source={{ uri: localImage }} style={styles.modalImage} />}
+                    {!localImage && <Image
                       style={styles.modalImage}
                       source={require('../../assets/images/addImage.png')}
-                    />
+                    />}
+
                   </TouchableOpacity>
 
                   <View style={styles.modalButtons}>
@@ -364,11 +431,11 @@ export default function Travels() {
             onChangeText={handleSearchText}
           />
           <View style={styles.searchItem}>
-            {deleteSearchIcon && 
-            <TouchableOpacity
-              onPress={() => deleteSearch()}>
-              <MaterialIcons size={28} name='close' color={'#45B3AF'} />
-            </TouchableOpacity>
+            {deleteSearchIcon &&
+              <TouchableOpacity
+                onPress={() => deleteSearch()}>
+                <MaterialIcons size={28} name='close' color={'#45B3AF'} />
+              </TouchableOpacity>
             }
             <TouchableOpacity
               onPress={() => handleSearch(searchText)}>
@@ -396,6 +463,8 @@ export default function Travels() {
     </SafeAreaView >
   );
 }
+
+
 
 const styles = StyleSheet.create({
   container: {
