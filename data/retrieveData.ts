@@ -1,6 +1,17 @@
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../firebaseConfig'; 
 
+interface CityInfo {
+  count: number;
+  originCity: string
+  originLatitude: number
+  originLongitude: number
+}
+
+// Define a estrutura do objeto cityCount
+interface CityCount {
+  [key: string]: CityInfo;
+}
 
 const listUsers = async () => {
   try {
@@ -36,6 +47,41 @@ const getTravelsByUser = async (user_id: string) => {
     return travelsList;
   } catch (error) {
     console.error('Erro ao listar viagens: ', error);
+  }
+};
+
+const getMostPopularOriginCityByUser = async (user_id: string) => {
+  try {
+    const travelsCollection = collection(db, 'travels');
+
+    const travelsQuery = query(travelsCollection, where("user_id", "==", user_id))
+
+    const travelsSnapshot = await getDocs(travelsQuery);
+
+    const originCityCount: CityCount = {};
+
+    travelsSnapshot.forEach((doc) => {
+      const data = doc.data();
+
+      if (originCityCount[data.origincity]) {
+        originCityCount[data.origincity].count += 1;
+      } else {
+        originCityCount[data.origincity] = {
+          count: 1,
+          originCity: data.origincity,
+          originLatitude: data.originlatitude,
+          originLongitude: data.originlongitude
+        }
+      }
+
+    })
+
+    const originCityCountArray = Object.values(originCityCount);
+    originCityCountArray.sort((a,b) => b.count - a.count);
+
+    return originCityCountArray[0] || null
+  } catch (error) {
+    console.error('Erro ao achar cidade de origem mais popular: ', error);
   }
 };
 
@@ -118,4 +164,4 @@ const searchTravels = async (user_id: string, text: string) => {
   }
 };
 
-export { listUsers, getTravelsByUser, getTravelById, getPostsByTravel, getPostById, searchTravels };
+export { listUsers, getTravelsByUser, getTravelById, getPostsByTravel, getPostById, searchTravels, getMostPopularOriginCityByUser };
