@@ -8,6 +8,9 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 
+import 'react-native-get-random-values'
+
+
 export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary,
@@ -15,8 +18,8 @@ export {
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
-  //initialRouteName: '(tabs)',
-  initialRouteName: 'login',
+  initialRouteName: '(tabs)',
+  //initialRouteName: 'login',
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -52,8 +55,8 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        {/*<Stack.Screen name="(tabs)" options={{ headerShown: false }} />*/}
+        {/*<Stack.Screen name="login" options={{ headerShown: false }} />*/}
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>

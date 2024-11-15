@@ -13,6 +13,25 @@ interface CityCount {
   [key: string]: CityInfo;
 }
 
+const getUserById = async (id: string) => {
+  try {
+    const userCollection = collection(db, 'users');
+
+    const userQuery = query(userCollection, where("__name__", "==", id))
+
+    const userSnapshot = await getDocs(userQuery);
+
+    const user = userSnapshot.docs.map(doc => ({
+      user_id: doc.id,
+      ...doc.data()
+    }));
+    
+    return user;
+  } catch (error) {
+    console.error('Erro ao buscar usuário: ', error);
+  }
+};
+
 const listUsers = async () => {
   try {
     // Referência para a coleção 'users'
@@ -164,4 +183,4 @@ const searchTravels = async (user_id: string, text: string) => {
   }
 };
 
-export { listUsers, getTravelsByUser, getTravelById, getPostsByTravel, getPostById, searchTravels, getMostPopularOriginCityByUser };
+export { getUserById, listUsers, getTravelsByUser, getTravelById, getPostsByTravel, getPostById, searchTravels, getMostPopularOriginCityByUser };

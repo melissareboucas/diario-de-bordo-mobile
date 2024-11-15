@@ -1,126 +1,32 @@
-import { getMostPopularOriginCityByUser } from '@/data/retrieveData';
-import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, SafeAreaView, StatusBar, ScrollView, RefreshControl, Text, View, ActivityIndicator } from 'react-native';
-
-import MapView from 'react-native-maps';
-
-interface CityInfo {
-  count: number;
-  originCity: string,
-  originLatitude: number
-  originLongitude: number
-}
+import LocationSelector from "@/components/LocactionSelector";
+import { useState } from "react";
+import { StyleSheet, SafeAreaView, TouchableOpacity, View, Text, Modal, Button } from "react-native";
+import { GooglePlaceData, GooglePlaceDetail, GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
 
 export default function Community() {
-  const [mostPopularOriginCity, setMostPopularOriginCity] = useState<CityInfo | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [initialRegion, setInitialRegion] = useState({
-    latitude: -23.5505,
-    longitude: -46.6333,
-    latitudeDelta: 20.0922,
-    longitudeDelta: 20.0421,
-  });
-  const [isMapReady, setIsMapReady] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [region, setRegion] = useState(initialRegion);
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [selectedLocation, setSelectedLocation] = useState<string>('');
 
-  const fetchMostPopularOriginCityByUser = async () => {
-    try {
-      setLoading(true);
-      const mostPopularOrigin = await getMostPopularOriginCityByUser("ayXVaqgFJZ4sBgoLKW29");
-      setMostPopularOriginCity(mostPopularOrigin || null);
-    } catch (error) {
-      console.error('Error fetching most popular origin:', error);
-    } finally {
-      setLoading(false);
-    }
+  const handleLocationSelect = (location: string): void => {
+    setSelectedLocation(location);
+    console.log('Localização selecionada:', location);
   };
 
-  // useEffect para buscar a cidade mais popular quando o componente monta
-  useEffect(() => {
-    fetchMostPopularOriginCityByUser();
-  }, []);
-
-  useEffect(() => {
-    if (mostPopularOriginCity) {
-      setRegion({
-        latitude: mostPopularOriginCity.originLatitude,
-        longitude: mostPopularOriginCity.originLongitude,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
-      });
-      setIsMapReady(true);
-    }
-  }, [mostPopularOriginCity]);
-
-
-
-
-
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-
-    setRegion(initialRegion)
-    setRefreshing(false);
-
-  }, [initialRegion]);
-
-
-
   return (
-    <SafeAreaView style={styles.container}>
-      {loading && (
-        <View style={styles.container}>
-          <ActivityIndicator size="large" color="#196966" />
-        </View>)
-      }
-      {!loading && (
-        <ScrollView
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-            />
-          }
-        >
-
-          {isMapReady ? (
-            <MapView
-              style={styles.map}
-              region={region} // Usar region em vez de initialRegion
-              onRegionChangeComplete={(newRegion) => {
-                if (!refreshing) {
-                  setRegion(newRegion);
-                }
-              }}
-            >
-
-            </MapView>) : (
-            <View style={styles.container}>
-              <ActivityIndicator size="large" color="#196966" />
-            </View>
-          )}
-
-          <Text style={styles.title}>Comunidade</Text>
-        </ScrollView>)}
-
-    </SafeAreaView>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Button 
+        title="Selecionar Localização" 
+        onPress={() => setModalVisible(true)} 
+      />
+      
+      <LocationSelector
+        isVisible={modalVisible}
+       
+        onSelectLocation={handleLocationSelect}
+      />
+      
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: StatusBar.currentHeight || 0,
-    backgroundColor: "white",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  map: {
-    width: '100%',
-    height: 200
-  },
-});
+

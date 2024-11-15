@@ -1,9 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+
 import {
   StyleSheet, SafeAreaView, ScrollView, StatusBar,
   Image, View, Text, FlatList, TouchableOpacity, Modal,
   TextInput, ListRenderItem, RefreshControl,
-  ActivityIndicator
+  ActivityIndicator,
+  Dimensions,
+  Keyboard
 } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 
@@ -14,13 +17,12 @@ import { addTravel } from '../../data/insertData'
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Timestamp } from 'firebase/firestore';
-import { Link } from 'expo-router';
+import { router } from 'expo-router';
 
 import { useIsFocused } from '@react-navigation/native';
 
 import { storage } from '@/firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-
 
 
 interface travelData {
@@ -58,9 +60,10 @@ interface insertTravelData {
   description: string
 }
 
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 
 export default function Travels() {
-
   const isFocused = useIsFocused();
 
   const [travels, setTravels] = useState<any[]>([]);
@@ -86,6 +89,12 @@ export default function Travels() {
   const [description, setDescription] = useState('');
   const [localImage, setLocalImage] = useState('');
   const [travelImage, setTravelImage] = useState('');
+
+  const [originCityError, setOriginCityError] = useState('');
+  const [destinyCityError, setDestinyCityError] = useState('');
+  const [modalError, setModalError] = useState('');
+  const [descriptionError, setDescriptionError] = useState('');
+  const [travelImageError, setTravelImageError] = useState('');
 
   const [deleteSearchIcon, setDeleteSearchIcon] = useState(false);
 
@@ -141,17 +150,25 @@ export default function Travels() {
 
   const handleOriginCity = (text: string) => {
     setOriginCity(text);
+    if (text) {
+      setOriginCityError('');
+    }
   };
+
 
   const handleDetinyCity = (text: string) => {
     setDestinyCity(text);
+    if (text) {
+      setDestinyCityError('');
+    }
   };
 
   const handleDescription = (text: string) => {
     setDescription(text);
+    if (text) {
+      setDescriptionError('');
+    }
   };
-
-
 
   // Função para abrir a galeria e selecionar a imagem
   const pickImage = async () => {
@@ -162,6 +179,8 @@ export default function Travels() {
       console.log("sem acesso")
       return;
     }
+
+    setTravelImageError('');
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -176,9 +195,6 @@ export default function Travels() {
     }
 
   }
-
-  // Função para fazer upload da imagem selecionada no Firebase Storage
-
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -196,56 +212,32 @@ export default function Travels() {
   }, [travels]);
 
 
-  const renderTravelCard: ListRenderItem<travelData> = ({ item }) => (
-    <View key={item.travel_id} style={styles.cardContainer}>
-      <View style={styles.card}>
-
-        <View style={styles.cardHeader}>
-          <View style={styles.cardLocation}>
-            <MaterialIcons size={28} name='location-pin' color={'#45B3AF'} />
-            <Text style={styles.cardHeaderText}>
-              {item.origincity}, {item.origincountry}
-            </Text>
-          </View>
-
-          <Link
-            style={styles.cardOptions}
-            href={{
-              pathname: '/(tabs)/posts',
-              params: { id: item.travel_id }
-            }}>
-            <MaterialIcons size={28} name='keyboard-arrow-right' color={'#45B3AF'} />
-          </Link>
-
-
-
-
-        </View>
-
-        <View style={styles.cardLocation}>
-          <MaterialIcons size={28} name='airplanemode-on' color={'#45B3AF'} />
-          <Text style={styles.cardHeaderText}>
-            {item.destinycity}, {item.destinycountry}
-          </Text>
-        </View>
-
-        <Text style={styles.cardDate}>{item.date.toDate().toLocaleDateString()}</Text>
-
-        <Text style={styles.cardDescription}>
-          {item.description}
-        </Text>
-
-        <Image
-          source={{ uri: item.travel_image }}
-          style={styles.cardImage}
-        />
-        
-
-      </View>
-    </View>
-  )
-
   const handleCreateTravel = () => {
+
+    if (!origincity) {
+      setOriginCityError('A cidade de origem é obrigatória.');
+      return;
+    }
+
+    if (!destinycity) {
+      setDestinyCityError('A cidade de destino é obrigatória.');
+      return;
+    }
+
+    if (!value) {
+      setModalError('O modal é obrigatório.');
+      return;
+    }
+
+    if (!description) {
+      setDescriptionError('A descrição é obrigatória.');
+      return;
+    }
+
+    if (!localImage) {
+      setTravelImageError('A imagem é obrigatória.');
+      return;
+    }
 
     const uploadImage = async (localImage: string) => {
       const response = await fetch(localImage);
@@ -297,176 +289,322 @@ export default function Travels() {
 
   };
 
+  const renderTravelCard: ListRenderItem<travelData> = ({ item }) => (
+    <View key={item.travel_id} style={styles.cardContainer}>
+      <TouchableOpacity
+        onPress={() =>
+          router.push({
+            pathname: '/(tabs)/posts',
+            params: { id: item.travel_id },
+          })
+        }
+        activeOpacity={0.8} // Define a opacidade ao pressionar, se desejado
+        style={styles.card} // Mantém o estilo fixo do card
+      >
+
+        <View style={styles.cardHeader}>
+          <View style={styles.cardLocation}>
+            <MaterialIcons size={28} name='location-pin' color={'#45B3AF'} />
+            <Text style={styles.cardHeaderText}>
+              {item.origincity}, {item.origincountry}
+            </Text>
+          </View>
+
+          <View
+            style={styles.cardOptions}>
+            <MaterialIcons size={28} name='keyboard-arrow-right' color={'#45B3AF'} />
+          </View>
+
+        </View>
+
+        <View style={styles.cardLocation}>
+          <MaterialIcons size={28} name='airplanemode-on' color={'#45B3AF'} />
+          <Text style={styles.cardHeaderText}>
+            {item.destinycity}, {item.destinycountry}
+          </Text>
+        </View>
+
+        <Text style={styles.cardDate}>{item.date.toDate().toLocaleDateString()}</Text>
+
+        <Text style={styles.cardDescription}>
+          {item.description}
+        </Text>
+
+        <Image
+          source={{ uri: item.travel_image }}
+          style={styles.cardImage}
+        />
+      </TouchableOpacity>
+    </View>
+  )
 
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-          />
-        }
-      >
-        <View>
-          <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-          <Image
-            source={require('../../assets/images/travelCard.png')}
-            style={styles.headerImage}
-          />
-          <View style={styles.header}>
-            <Text style={styles.headerText}>Minhas viagens</Text>
-            <TouchableOpacity
-              style={styles.headerButton}
-              onPress={() => setModalCreateTravelVisible(true)}
-            >
-              <Text style={styles.headerButtonText}>
-                Criar viagem
-              </Text>
-            </TouchableOpacity>
-            <Modal
-              animationType="fade"
-              transparent={true}
-              visible={modalCreateTravelVisible}
-              onRequestClose={() => setModalCreateTravelVisible(false)}
-            >
-              <View style={styles.modalOverlay}>
-                <View style={styles.modalContent}>
-                  <Text style={styles.modalText}>
-                    Como foi sua viagem?
-                  </Text>
+    <>
+      <SafeAreaView style={styles.container}>
 
-                  <TextInput
-                    style={styles.modalInputText}
-                    placeholder='Cidade de origem da viagem'
-                    placeholderTextColor='#45B3AF'
-                    value={origincity}
-                    onChangeText={handleOriginCity}
-                  />
+        <ScrollView
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+            />
+          }
+        >
+          <View>
+            <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+            <Image
+              source={require('../../assets/images/travelCard.png')}
+              style={styles.headerImage}
+            />
+            <View style={styles.header}>
+              <Text style={styles.headerText}>Minhas viagens</Text>
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={() => setModalCreateTravelVisible(true)}
+              >
+                <Text style={styles.headerButtonText}>
+                  Criar viagem
+                </Text>
+              </TouchableOpacity>
+              <Modal
+                animationType="fade"
+                transparent={true}
+                visible={modalCreateTravelVisible}
+                onRequestClose={() => setModalCreateTravelVisible(false)}
+              >
+                <View style={styles.modalOverlay}>
+                  <View style={styles.modalContent}>
+                    <Text style={styles.modalText}>
+                      Como foi sua viagem?
+                    </Text>
+                    
+                    <TextInput
+                      style={styles.modalInputText}
+                      placeholder='Cidade de origem da viagem'
+                      placeholderTextColor='#45B3AF'
+                      value={origincity}
+                      onChangeText={handleOriginCity}
+                    />
+                    {originCityError ? <Text style={{ color: 'red' }}>{originCityError}</Text> : null}
 
-                  <TextInput
-                    style={styles.modalInputText}
-                    placeholder='Cidade de destino da viagem'
-                    placeholderTextColor='#45B3AF'
-                    value={destinycity}
-                    onChangeText={handleDetinyCity}
-                  />
+                    <TextInput
+                      style={styles.modalInputText}
+                      placeholder='Cidade de destino da viagem'
+                      placeholderTextColor='#45B3AF'
+                      value={destinycity}
+                      onChangeText={handleDetinyCity}
+                    />
+                    {destinyCityError ? <Text style={{ color: 'red' }}>{destinyCityError}</Text> : null}
 
-                  <DropDownPicker
-                    open={open}
-                    value={value}
-                    items={items}
-                    setOpen={setOpen}
-                    setValue={setValue}
-                    setItems={setItems}
-                    placeholder="Modalidade"
-                    style={styles.modalPicker}
-                    textStyle={styles.modalDropdownText}
-                    dropDownContainerStyle={styles.mdoalDropDownContainer}
-                    ArrowUpIconComponent={() => (
-                      <MaterialIcons size={28} name='keyboard-arrow-up' color='#45B3AF' />
-                    )}
-                    ArrowDownIconComponent={() => (
-                      <MaterialIcons size={28} name='keyboard-arrow-down' color='#45B3AF' />
-                    )}
-                  />
+                    <DropDownPicker
+                      open={open}
+                      value={value}
+                      items={items}
+                      setOpen={setOpen}
+                      setValue={(val) => {
+                        setValue(val);
+                        setModalError(''); 
+                      }}
+                      setItems={setItems}
+                      placeholder="Modalidade"
+                      style={styles.modalPicker}
+                      textStyle={styles.modalDropdownText}
+                      dropDownContainerStyle={styles.mdoalDropDownContainer}
+                      ArrowUpIconComponent={() => (
+                        <MaterialIcons size={28} name='keyboard-arrow-up' color='#45B3AF' />
+                      )}
+                      ArrowDownIconComponent={() => (
+                        <MaterialIcons size={28} name='keyboard-arrow-down' color='#45B3AF' />
+                      )}
+                    />
+                    {modalError ? <Text style={{ color: 'red' }}>{modalError}</Text> : null}
 
-                  <TextInput
-                    style={styles.modalInputDescriptionText}
-                    placeholder='Descrição'
-                    placeholderTextColor='#45B3AF'
-                    multiline
-                    textAlignVertical="top"
-                    value={description}
-                    onChangeText={handleDescription}
-                  />
 
-                  <TouchableOpacity
-                    onPress={pickImage}
-                  >
-                    {localImage && <Image source={{ uri: localImage }} style={styles.modalImage} />}
-                    {!localImage && <Image
-                      style={styles.modalImage}
-                      source={require('../../assets/images/addImage.png')}
-                    />}
-
-                  </TouchableOpacity>
-
-                  <View style={styles.modalButtons}>
+                    <TextInput
+                      style={styles.modalInputDescriptionText}
+                      placeholder='Descrição'
+                      placeholderTextColor='#45B3AF'
+                      multiline
+                      textAlignVertical="top"
+                      value={description}
+                      onChangeText={handleDescription}
+                    />
+                    {descriptionError ? <Text style={{ color: 'red' }}>{descriptionError}</Text> : null}
 
                     <TouchableOpacity
-                      style={styles.modalCancelButton}
-                      onPress={() => setModalCreateTravelVisible(false)}>
-                      <Text style={styles.modalCancelButtonText}>
-                        Cancelar
-                      </Text>
-                    </TouchableOpacity>
+                      onPress={pickImage}
+                    >
+                      {localImage && <Image source={{ uri: localImage }} style={styles.modalImage} />}
+                      {!localImage && <Image
+                        style={styles.modalImage}
+                        source={require('../../assets/images/addImage.png')}
+                      />}
 
-                    <TouchableOpacity
-                      style={styles.modalAddButton}
-                      onPress={() => handleCreateTravel()}>
-                      <Text style={styles.modalAddButtonText}>
-                        Adicionar
-                      </Text>
                     </TouchableOpacity>
+                    {travelImageError ? <Text style={{ color: 'red' }}>{travelImageError}</Text> : null}
+
+                    <View style={styles.modalButtons}>
+
+                      <TouchableOpacity
+                        style={styles.modalCancelButton}
+                        onPress={() => setModalCreateTravelVisible(false)}>
+                        <Text style={styles.modalCancelButtonText}>
+                          Cancelar
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.modalAddButton}
+                        onPress={() => handleCreateTravel()}>
+                        <Text style={styles.modalAddButtonText}>
+                          Adicionar
+                        </Text>
+                      </TouchableOpacity>
+
+                    </View>
+
 
                   </View>
-
                 </View>
-              </View>
-            </Modal>
+              </Modal>
+
+            </View>
 
           </View>
 
-        </View>
+          <View style={styles.searchContainer}>
 
-        <View style={styles.searchContainer}>
-
-          <TextInput
-            style={styles.searchBar}
-            placeholder='Buscar por cidade de destino'
-            placeholderTextColor='#45B3AF'
-            value={searchText}
-            onChangeText={handleSearchText}
-          />
-          <View style={styles.searchItem}>
-            {deleteSearchIcon &&
+            <TextInput
+              style={styles.searchBar}
+              placeholder='Buscar por cidade de destino'
+              placeholderTextColor='#45B3AF'
+              value={searchText}
+              onChangeText={handleSearchText}
+            />
+            <View style={styles.searchItem}>
+              {deleteSearchIcon &&
+                <TouchableOpacity
+                  onPress={() => deleteSearch()}>
+                  <MaterialIcons size={28} name='close' color={'#45B3AF'} />
+                </TouchableOpacity>
+              }
               <TouchableOpacity
-                onPress={() => deleteSearch()}>
-                <MaterialIcons size={28} name='close' color={'#45B3AF'} />
+                onPress={() => handleSearch(searchText)}>
+                <MaterialIcons size={28} name='search' color={'#45B3AF'} />
               </TouchableOpacity>
-            }
-            <TouchableOpacity
-              onPress={() => handleSearch(searchText)}>
-              <MaterialIcons size={28} name='search' color={'#45B3AF'} />
-            </TouchableOpacity>
+            </View>
           </View>
-        </View>
 
-        {loading && (
-          <View style={styles.container}>
-            <ActivityIndicator size="large" color="#196966" />
-          </View>)
-        }
+          {loading && (
+            <View style={styles.container}>
+              <ActivityIndicator size="large" color="#196966" />
+            </View>)
+          }
 
-        {!loading && (
-          <FlatList
-            data={travels}
-            renderItem={renderTravelCard}
-            keyExtractor={item => item.travel_id}
-          />
-        )}
+          {!loading && (
+            <FlatList
+              data={travels}
+              renderItem={renderTravelCard}
+              keyExtractor={item => item.travel_id}
+            />
+          )}
 
 
-      </ScrollView>
-    </SafeAreaView >
+        </ScrollView >
+      </SafeAreaView >
+    </>
+
+
   );
 }
 
 
-
 const styles = StyleSheet.create({
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalView: {
+    position: 'absolute',
+    top: SCREEN_HEIGHT * 0.1, // Posiciona o modal a 10% do topo da tela
+    width: '90%',
+    maxHeight: SCREEN_HEIGHT * 0.8, // Limita a altura a 80% da tela
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  closeButton: {
+    position: 'absolute',
+    right: 10,
+    top: 10,
+    zIndex: 2,
+  },
+  closeButtonText: {
+    fontSize: 20,
+    color: '#666',
+  },
+  googleAutoCompleteContainer: {
+    flex: 0,
+    position: 'relative',
+    width: '100%',
+    marginTop: 30, // Espaço para o botão de fechar
+    zIndex: 1,
+  },
+  autocompleteContainer: {
+    flex: 1,
+    zIndex: 2,
+  },
+  suggestionRow: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  suggestionText: {
+    fontSize: 16,
+  },
+  textInput: {
+    height: 46,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 4,
+    paddingHorizontal: 10,
+    fontSize: 16,
+  },
+  listView: {
+    maxHeight: SCREEN_HEIGHT * 0.4, // Limita a altura da lista a 40% da tela
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 4,
+    position: 'relative',
+    zIndex: 9999,
+  },
+  row: {
+    padding: 13,
+    minHeight: 44,
+    flexDirection: 'row',
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#ddd',
+  },
+  description: {
+    fontSize: 15,
+  },
+  powered: {
+    display: 'none', // Esconde o "Powered by Google"
+  },
   container: {
     flex: 1,
     paddingTop: StatusBar.currentHeight || 0,
