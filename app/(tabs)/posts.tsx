@@ -1,5 +1,7 @@
-import { ActivityIndicator, FlatList, ListRenderItem, Modal, RefreshControl, SafeAreaView, 
-  ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Image } from 'react-native';
+import {
+  ActivityIndicator, FlatList, ListRenderItem, Modal, RefreshControl, SafeAreaView,
+  ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Image
+} from 'react-native';
 
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -249,7 +251,7 @@ export default function Posts() {
     });
   };
 
-  
+
   const handleEditDestinyCity = (text: string) => {
     setTravel(prevPosts => {
       if (prevPosts.length > 0) {
@@ -285,7 +287,7 @@ export default function Posts() {
       destinylatitude: travel[0].destinylatitude,
       destinylongitude: travel[0].destinylongitude,
       distanceinmeters: travel[0].distanceinmeters,
-      modal: value?value:'',
+      modal: value ? value : '',
       travel_image: travel[0].travel_image,
       date: Timestamp.fromDate(new Date()), // Data atual,
       description: travel[0].description
@@ -450,14 +452,7 @@ export default function Posts() {
         </View>)
       }
       {!loading && (
-        <ScrollView
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-            />
-          }
-        >
+        <>
           <View>
             <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
@@ -684,18 +679,19 @@ export default function Posts() {
 
           </View>
 
-
-
-
           <FlatList
             data={posts}
             renderItem={renderPostCard}
             keyExtractor={item => item.post_id}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+              />
+            }
           />
 
-
-
-        </ScrollView>
+        </>
       )}
     </SafeAreaView >
   );

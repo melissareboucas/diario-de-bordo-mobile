@@ -7,6 +7,8 @@ import { FlatList } from 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import * as ImagePicker from 'expo-image-picker';
+import { updateUser } from '@/data/updateData';
+import { useIsFocused } from '@react-navigation/native';
 
 
 interface userData {
@@ -17,20 +19,33 @@ interface userData {
   background_image: string,
 }
 
+interface insertUserData {
+  name: string,
+  username: string,
+  profile_image: string,
+  background_image: string,
+}
+
 export default function ProfileSetup() {
+  const isFocused = useIsFocused();
   const [loading, setLoading] = useState(true);
 
   const [user, setUser] = useState<any[]>([]);
   const [name, setName] = useState("");
   const [userName, setUserName] = useState("");
+  const [background_image, setBackground_image] = useState("");
+  const [profile_image, setProfile_image] = useState("");
 
   const [editProfileModal, seteEditProfileModal] = useState(false);
 
-  const [localImage, setLocalImage] = useState('');
+  const [localImageBackground, setLocalImageBackground] = useState('');
+  const [localImageProfile, setLocalImageProfile] = useState('');
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (isFocused) {
+      fetchData();
+    }
+  }, [isFocused]);
 
   const fetchData = async () => {
     try {
@@ -52,7 +67,7 @@ export default function ProfileSetup() {
     setUserName(text);
   };
 
-  const pickImage = async () => {
+  const pickImageBackground = async () => {
     // Solicitar permissão para acessar a galeria
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -69,14 +84,47 @@ export default function ProfileSetup() {
 
     if (!result.canceled) {
       const uri = result.assets[0].uri;
-      setLocalImage(result.assets[0].uri);
+      setLocalImageBackground(result.assets[0].uri);
+      setBackground_image(result.assets[0].uri);
+    }
+
+  }
+
+  const pickImageProfile = async () => {
+    // Solicitar permissão para acessar a galeria
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      console.log("sem acesso")
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      const uri = result.assets[0].uri;
+      setLocalImageProfile(result.assets[0].uri);
+      setProfile_image(result.assets[0].uri);
     }
 
   }
 
   const handleEditProfile = (user_id: string) => {
-    console.log(user_id)
-  };
+    const updatedUser: insertUserData = {
+      name: name,
+      username: userName,
+      background_image: background_image,
+      profile_image: profile_image,
+    };
+
+    updateUser(updatedUser, user_id);
+    fetchData();
+    seteEditProfileModal(false)
+  }
 
   const renderUser: ListRenderItem<userData> = ({ item }) => (
     <View key={item.user_id}>
@@ -105,7 +153,13 @@ export default function ProfileSetup() {
 
       <TouchableOpacity
         style={styles.headerButton}
-        onPress={() => seteEditProfileModal(true)}
+        onPress={() => {
+          setName(item.name),
+            setUserName(item.username)
+          setBackground_image(item.background_image)
+          setProfile_image(item.profile_image)
+          seteEditProfileModal(true)
+        }}
       >
         <Text style={styles.headerButtonText}>
           Editar perfil
@@ -129,7 +183,7 @@ export default function ProfileSetup() {
               style={styles.modalInputText}
               placeholder='Nome'
               placeholderTextColor='#45B3AF'
-              value={item.name}
+              value={name}
               onChangeText={handleEditName}
             />
 
@@ -137,26 +191,36 @@ export default function ProfileSetup() {
               style={styles.modalInputText}
               placeholder='Username'
               placeholderTextColor='#45B3AF'
-              value={item.username}
+              value={userName}
               onChangeText={handleEditUserName}
             />
 
             <TouchableOpacity
-              onPress={pickImage}
+              onPress={pickImageBackground}
             >
-              {localImage && <Image source={{ uri: localImage }} style={styles.modalImage} />}
-              {!localImage && <Image
+              {localImageBackground && <Image source={{ uri: localImageBackground }} style={styles.modalImage} />}
+              {!localImageBackground && <Image
                 style={styles.modalImage}
                 source={{ uri: item.background_image }}
               />}
+            </TouchableOpacity>
 
+            <TouchableOpacity
+              onPress={pickImageProfile}
+            >
+              {localImageProfile && <Image source={{ uri: localImageProfile }} style={styles.profileImage} />}
+              {!localImageProfile && <Image
+                style={styles.profileImage}
+                source={{ uri: item.profile_image }}
+              />}
             </TouchableOpacity>
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.modalCancelButton}
                 onPress={() => {
-                  setLocalImage('');
+                  setLocalImageBackground('');
+                  setLocalImageProfile('');
                   seteEditProfileModal(false);
                 }}>
                 <Text style={styles.modalCancelButtonText}>
@@ -181,8 +245,7 @@ export default function ProfileSetup() {
         style={styles.headerButton}
         onPress={() =>
           router.push({
-            pathname: '/(tabs)/posts',
-            params: { id: item.user_id },
+            pathname: '/(tabs)',
           })
         }
       >
@@ -229,7 +292,7 @@ const styles = StyleSheet.create({
   mapImage: {
     width: '100%',
     height: 200,
-    resizeMode: 'center',
+    resizeMode: 'cover',
   },
   profileArea: {
     margin: 10,

@@ -1,5 +1,6 @@
 import { Card } from '@/components/Card';
 import { getCitiesByUser, getCountriesByUser, getTotalKmByUser, getUserById } from '@/data/retrieveData';
+import { useIsFocused } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
 import { StyleSheet, SafeAreaView, StatusBar, Image, View, Text, ActivityIndicator, ListRenderItem } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
@@ -14,6 +15,7 @@ interface userData {
 }
 
 export default function Home() {
+  const isFocused = useIsFocused();
   const [loading, setLoading] = useState(true);
 
   const [user, setUser] = useState<any[]>([]);
@@ -23,8 +25,9 @@ export default function Home() {
  
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (isFocused) {
+    fetchData();}
+  }, [isFocused]);
 
   const fetchData = async () => {
     try {
@@ -115,7 +118,7 @@ const styles = StyleSheet.create({
   mapImage: {
     width: '100%',
     height: 200,
-    resizeMode: 'center',
+    resizeMode: 'cover',
   },
   profileArea: {
     margin: 10,
