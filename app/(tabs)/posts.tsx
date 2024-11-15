@@ -72,20 +72,6 @@ export default function Posts() {
   const [showDatePicker, setShowDatePicker] = useState(false);
 
 
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(null);
-  const [items, setItems] = useState([
-    { label: 'Avião', value: 'Avião' },
-    { label: 'Navio', value: 'Navio' },
-    { label: 'Trem', value: 'Trem' },
-    { label: 'Ônibus', value: 'Ônibus' },
-    { label: 'Carro', value: 'Carro' },
-    { label: 'Moto', value: 'Moto' },
-    { label: 'Bicicleta', value: 'Bicicleta' },
-    { label: 'Caminhando', value: 'Caminhando' },
-    { label: 'Outros', value: 'Outros' }
-  ]);
-
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -262,7 +248,33 @@ export default function Posts() {
     });
   };
 
-  const handleEditDescriptionCity = (text: string) => {
+  const handleEditDistance = (text: string) => {
+    setTravel(prevPosts => {
+      const numericValue = parseInt(text.replace(/[^0-9]/g, ''), 10);
+      if (prevPosts.length > 0 && !isNaN(numericValue)) {
+
+        const updatedTravel = { ...prevPosts[0], distanceinmeters: numericValue };
+        return [updatedTravel];
+      }
+      return prevPosts;
+    });
+  };
+
+  const handleTravelDateChange = (event: any, selectedDate: Date | undefined) => {
+    setTravel(prevPosts => {
+      const currentDate = selectedDate || new Date();
+      if (prevPosts.length > 0) {
+
+        const updatedTravel = { ...prevPosts[0], date: Timestamp.fromDate(currentDate) };
+        setShowDatePicker(false);
+        return [updatedTravel];
+      }
+      return prevPosts;
+    });
+    
+  };
+
+  const handleEditDescription = (text: string) => {
     setTravel(prevPosts => {
       if (prevPosts.length > 0) {
 
@@ -281,7 +293,7 @@ export default function Posts() {
       destinycity: travel[0].destinycity,
       distanceinmeters: travel[0].distanceinmeters,
       travel_image: travel[0].travel_image,
-      date: Timestamp.fromDate(new Date()), // Data atual,
+      date: travel[0].date,
       description: travel[0].description
     };
 
@@ -295,6 +307,8 @@ export default function Posts() {
     setShowDatePicker(false);
     setSelectedDate(currentDate);
   };
+
+
 
 
   const renderPostCard: ListRenderItem<postData> = ({ item }) => (
@@ -525,6 +539,40 @@ export default function Posts() {
                           onChangeText={handleEditDestinyCity}
                         />
 
+                        <View style={styles.inputContainer}>
+
+                          <Text style={styles.inputLabel}>Distância (m)</Text>
+
+                          <TextInput
+                            style={styles.distanceText}
+                            placeholder='0'
+                            placeholderTextColor='#45B3AF'
+                            value={travel[0].distanceinmeters}
+                            keyboardType="numeric"
+                            onChangeText={handleEditDistance}
+                          />
+
+                        </View>
+
+                        <View style={styles.inputContainer}>
+
+                          <Text style={styles.inputLabel}>Data da Viagem</Text>
+
+                          {/* Campo de data */}
+                          <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.dateInput}>
+                            <Text style={styles.dateText}>{(travel[0].date).toDate().toLocaleDateString()}</Text>
+                          </TouchableOpacity>
+                          {showDatePicker && (
+                            <DateTimePicker
+                              value={selectedDate}
+                              mode="date"
+                              display="calendar"
+                              onChange={handleTravelDateChange}
+                            />
+                          )}
+
+                        </View>
+
                         <TextInput
                           style={styles.modalInputDescriptionText}
                           placeholder='Descrição'
@@ -532,7 +580,7 @@ export default function Posts() {
                           multiline
                           textAlignVertical="top"
                           value={travel[0].description}
-                          onChangeText={handleEditDescriptionCity}
+                          onChangeText={handleEditDescription}
                         />
 
                         <TouchableOpacity>
@@ -788,6 +836,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#45B3AF',
     marginBottom: 5,
+  },
+  distanceText: {
+    borderWidth: 1,
+    borderColor: '#45B3AF',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+    justifyContent: 'center',
+    width: 100,
+    marginLeft: 50,
+    color: '#45B3AF'
   },
   dateInput: {
     borderWidth: 1,
