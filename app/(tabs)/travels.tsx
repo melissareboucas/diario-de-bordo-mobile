@@ -12,7 +12,7 @@ import DropDownPicker from 'react-native-dropdown-picker';
 
 import * as ImagePicker from 'expo-image-picker';
 
-import { getTravelsByUser, searchTravels } from '../../data/retrieveData'
+import { getTravelsByUser, getUserById, searchTravels } from '../../data/retrieveData'
 import { addTravel } from '../../data/insertData'
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -24,20 +24,16 @@ import { useIsFocused } from '@react-navigation/native';
 import { storage } from '@/firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
+import DateTimePicker from '@react-native-community/datetimepicker'; // Importando o DateTimePicker
+
+
 
 interface travelData {
   travel_id: string,
   user_id: string,
   origincity: string,
-  origincountry: string,
-  originlatitude: number,
-  originlongitude: number,
   destinycity: string,
-  destinycountry: string,
-  destinylatitude: number,
-  destinylongitude: number,
   distanceinmeters: number,
-  modal: string,
   travel_image: string,
   date: Timestamp,
   description: string
@@ -46,18 +42,19 @@ interface travelData {
 interface insertTravelData {
   user_id: string,
   origincity: string,
-  origincountry: string,
-  originlatitude: number,
-  originlongitude: number,
   destinycity: string,
-  destinycountry: string,
-  destinylatitude: number,
-  destinylongitude: number,
   distanceinmeters: number,
-  modal: string,
   travel_image: string,
   date: Timestamp,
   description: string
+}
+
+interface userData {
+  user_id: string,
+  name: string,
+  username: string,
+  profile_image: string,
+  background_image: string,
 }
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -74,48 +71,50 @@ export default function Travels() {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(null);
   const [items, setItems] = useState([
-    { label: 'Avião', value: 'Avião' },
-    { label: 'Navio', value: 'Navio' },
-    { label: 'Trem', value: 'Trem' },
-    { label: 'Ônibus', value: 'Ônibus' },
-    { label: 'Carro', value: 'Carro' },
-    { label: 'Moto', value: 'Moto' },
-    { label: 'Bicicleta', value: 'Bicicleta' },
-    { label: 'Caminhando', value: 'Caminhando' },
-    { label: 'Outros', value: 'Outros' }
+    { label: 'Sim', value: 'yes' },
+    { label: 'Não', value: 'no' },
   ]);
   const [origincity, setOriginCity] = useState('');
   const [destinycity, setDestinyCity] = useState('');
   const [description, setDescription] = useState('');
+  const [distanceinmeters, setDistanceInMeeters] = useState(0);
   const [localImage, setLocalImage] = useState('');
   const [travelImage, setTravelImage] = useState('');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const [originCityError, setOriginCityError] = useState('');
   const [destinyCityError, setDestinyCityError] = useState('');
-  const [modalError, setModalError] = useState('');
   const [descriptionError, setDescriptionError] = useState('');
   const [travelImageError, setTravelImageError] = useState('');
 
   const [deleteSearchIcon, setDeleteSearchIcon] = useState(false);
 
+  const [user, setUser] = useState<userData[]>([]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+
+      const userDb = await getUserById("ayXVaqgFJZ4sBgoLKW29");
+      setUser(userDb || []);
+
+
+      const travelsList = await getTravelsByUser("ayXVaqgFJZ4sBgoLKW29");
+      setTravels(travelsList || []);
+
+    } catch (error) {
+      console.error('Error fetching travels:', error);
+    } finally {
+      setLoading(false);
+    }
+
+  }
 
 
   useEffect(() => {
     if (isFocused) {
-      const fetchTravels = async () => {
-        try {
-          setLoading(true);
-          const travelsList = await getTravelsByUser("ayXVaqgFJZ4sBgoLKW29");
-          setTravels(travelsList || []);
-        } catch (error) {
-          console.error('Error fetching travels:', error);
-        } finally {
-          setLoading(false);
-        }
-
-      };
-
-      fetchTravels();
+      fetchData();
     }
   }, [isFocused]);
 
@@ -147,14 +146,12 @@ export default function Travels() {
     onRefresh();
   }
 
-
   const handleOriginCity = (text: string) => {
     setOriginCity(text);
     if (text) {
       setOriginCityError('');
     }
   };
-
 
   const handleDetinyCity = (text: string) => {
     setDestinyCity(text);
@@ -168,6 +165,19 @@ export default function Travels() {
     if (text) {
       setDescriptionError('');
     }
+  };
+
+  const handleDistance = (text: string) => {
+    const numericValue = parseInt(text.replace(/[^0-9]/g, ''), 10);
+    if (!isNaN(numericValue)) {
+      setDistanceInMeeters(numericValue);
+    }
+  };
+
+  const handleDateChange = (event: any, selectedDate: Date | undefined) => {
+    const currentDate = selectedDate || new Date();
+    setShowDatePicker(false);
+    setSelectedDate(currentDate);
   };
 
   // Função para abrir a galeria e selecionar a imagem
@@ -211,7 +221,6 @@ export default function Travels() {
     }, 2000);
   }, [travels]);
 
-
   const handleCreateTravel = () => {
 
     if (!origincity) {
@@ -221,11 +230,6 @@ export default function Travels() {
 
     if (!destinycity) {
       setDestinyCityError('A cidade de destino é obrigatória.');
-      return;
-    }
-
-    if (!value) {
-      setModalError('O modal é obrigatório.');
       return;
     }
 
@@ -254,25 +258,20 @@ export default function Travels() {
         .then((downloadURL) => {
           setTravelImage(downloadURL)
           const newTravel: insertTravelData = {
-            user_id: 'ayXVaqgFJZ4sBgoLKW29',
+            user_id: user[0].user_id,
             origincity: origincity,
-            origincountry: 'Brasil',
-            originlatitude: -23.5505,
-            originlongitude: -46.6333,
             destinycity: destinycity,
-            destinycountry: 'Brasil',
-            destinylatitude: -22.9068,
-            destinylongitude: -43.1729,
-            distanceinmeters: 429000,
-            modal: value ?? 'avião',
+            distanceinmeters: distanceinmeters,
             travel_image: downloadURL,
-            date: Timestamp.fromDate(new Date()), // Data atual
+            date: Timestamp.fromDate(selectedDate),
             description: description,
           };
           addTravel(newTravel);
           setOriginCity("")
           setDestinyCity("")
           setDescription("")
+          setDistanceInMeeters(0)
+          setSelectedDate(new Date())
           setLocalImage("")
           setTravelImage("")
           setValue(null)
@@ -306,7 +305,7 @@ export default function Travels() {
           <View style={styles.cardLocation}>
             <MaterialIcons size={28} name='location-pin' color={'#45B3AF'} />
             <Text style={styles.cardHeaderText}>
-              {item.origincity}, {item.origincountry}
+              {item.origincity}
             </Text>
           </View>
 
@@ -320,7 +319,7 @@ export default function Travels() {
         <View style={styles.cardLocation}>
           <MaterialIcons size={28} name='airplanemode-on' color={'#45B3AF'} />
           <Text style={styles.cardHeaderText}>
-            {item.destinycity}, {item.destinycountry}
+            {item.destinycity}
           </Text>
         </View>
 
@@ -337,7 +336,6 @@ export default function Travels() {
       </TouchableOpacity>
     </View>
   )
-
 
   return (
     <>
@@ -372,46 +370,62 @@ export default function Travels() {
                     Como foi sua viagem?
                   </Text>
 
+
+
                   <TextInput
                     style={styles.modalInputText}
-                    placeholder='Cidade de origem da viagem'
+                    placeholder='Cidade, País de origem'
                     placeholderTextColor='#45B3AF'
                     value={origincity}
                     onChangeText={handleOriginCity}
                   />
                   {originCityError ? <Text style={{ color: 'red' }}>{originCityError}</Text> : null}
 
+
+
+
                   <TextInput
                     style={styles.modalInputText}
-                    placeholder='Cidade de destino da viagem'
+                    placeholder='Cidade, País de destino'
                     placeholderTextColor='#45B3AF'
                     value={destinycity}
                     onChangeText={handleDetinyCity}
                   />
                   {destinyCityError ? <Text style={{ color: 'red' }}>{destinyCityError}</Text> : null}
 
-                  <DropDownPicker
-                    open={open}
-                    value={value}
-                    items={items}
-                    setOpen={setOpen}
-                    setValue={(val) => {
-                      setValue(val);
-                      setModalError('');
-                    }}
-                    setItems={setItems}
-                    placeholder="Modalidade"
-                    style={styles.modalPicker}
-                    textStyle={styles.modalDropdownText}
-                    dropDownContainerStyle={styles.mdoalDropDownContainer}
-                    ArrowUpIconComponent={() => (
-                      <MaterialIcons size={28} name='keyboard-arrow-up' color='#45B3AF' />
+                  <View style={styles.inputContainer}>
+
+                    <Text style={styles.inputLabel}>Distância (m)</Text>
+
+                    <TextInput
+                      style={styles.distanceText}
+                      placeholder='Distância (m)'
+                      placeholderTextColor='#45B3AF'
+                      value={distanceinmeters.toString()}
+                      keyboardType="numeric"
+                      onChangeText={handleDistance}
+                    />
+
+                  </View>
+
+                  <View style={styles.inputContainer}>
+
+                    <Text style={styles.inputLabel}>Data da Viagem</Text>
+
+                    {/* Campo de data */}
+                    <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.dateInput}>
+                      <Text style={styles.dateText}>{selectedDate.toLocaleDateString()}</Text>
+                    </TouchableOpacity>
+                    {showDatePicker && (
+                      <DateTimePicker
+                        value={selectedDate}
+                        mode="date"
+                        display="calendar"
+                        onChange={handleDateChange}
+                      />
                     )}
-                    ArrowDownIconComponent={() => (
-                      <MaterialIcons size={28} name='keyboard-arrow-down' color='#45B3AF' />
-                    )}
-                  />
-                  {modalError ? <Text style={{ color: 'red' }}>{modalError}</Text> : null}
+
+                  </View>
 
 
                   <TextInput
@@ -554,16 +568,40 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#666',
   },
-  googleAutoCompleteContainer: {
-    flex: 0,
-    position: 'relative',
-    width: '100%',
-    marginTop: 30, // Espaço para o botão de fechar
-    zIndex: 1,
+  inputContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  autocompleteContainer: {
-    flex: 1,
-    zIndex: 2,
+  inputLabel: {
+    fontSize: 16,
+    color: '#45B3AF',
+    marginBottom: 5,
+  },
+  dateInput: {
+    borderWidth: 1,
+    borderColor: '#45B3AF',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+    justifyContent: 'center',
+    width: 120,
+    marginLeft: 10
+  },
+  dateText: {
+    color: '#45B3AF',
+    fontSize: 16,
+  },
+  distanceText: {
+    borderWidth: 1,
+    borderColor: '#45B3AF',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+    justifyContent: 'center',
+    width: 100,
+    marginLeft: 50,
+    color: '#45B3AF'
   },
   suggestionRow: {
     padding: 15,
@@ -581,29 +619,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     fontSize: 16,
   },
-  listView: {
-    maxHeight: SCREEN_HEIGHT * 0.4, // Limita a altura da lista a 40% da tela
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    position: 'relative',
-    zIndex: 9999,
-  },
-  row: {
-    padding: 13,
-    minHeight: 44,
-    flexDirection: 'row',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#ddd',
-  },
   description: {
     fontSize: 15,
-  },
-  powered: {
-    display: 'none', // Esconde o "Powered by Google"
   },
   container: {
     flex: 1,
@@ -747,6 +764,12 @@ const styles = StyleSheet.create({
   modalAddButtonText: {
     color: 'white',
     padding: 5
+  },
+  rowContainer: {
+    // flexDirection: 'row', // Faz os elementos ficarem lado a lado
+    //justifyContent: 'space-evenly', // Espaço entre os elementos
+    //flexWrap: 'wrap',
+    //alignItems: 'flex-end',
   },
   searchContainer: {
     flexDirection: 'row',

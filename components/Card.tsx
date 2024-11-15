@@ -10,7 +10,7 @@ interface CardProps {
 
 const images = {
   Viagens: require('../assets/images/travelCard.png'),
-  Países: require('../assets/images/countryCard.png'),
+  Destinos: require('../assets/images/countryCard.png'),
   Cidades: require('../assets/images/cityCard.png'),
 };
 

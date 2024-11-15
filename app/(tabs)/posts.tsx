@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 
 import { useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { getPostsByTravel, getTravelById, getPostById } from '@/data/retrieveData';
 import { Timestamp } from 'firebase/firestore';
 
@@ -14,7 +14,8 @@ import { deletePostById, deleteTravelById } from '@/data/deleteData';
 import { useNavigation } from '@react-navigation/native';
 import { addPost } from '@/data/insertData';
 import { updatePost, updateTravel } from '@/data/updateData';
-import DropDownPicker from 'react-native-dropdown-picker';
+
+import DateTimePicker from '@react-native-community/datetimepicker'; // Importando o DateTimePicker
 
 
 interface postData {
@@ -38,15 +39,8 @@ interface travelData {
   travel_id: string,
   user_id: string,
   origincity: string,
-  origincountry: string,
-  originlatitude: number,
-  originlongitude: number,
   destinycity: string,
-  destinycountry: string,
-  destinylatitude: number,
-  destinylongitude: number,
   distanceinmeters: number,
-  modal: string,
   travel_image: string,
   date: Timestamp,
   description: string
@@ -73,6 +67,10 @@ export default function Posts() {
 
   const [selectedPostId, setSelectedPostId] = useState<string>('000');
   const [selectedPost, setSelectedPost] = useState<any[]>([]);
+
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
 
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(null);
@@ -178,7 +176,7 @@ export default function Posts() {
       travel_id: travel_id,
       post_text: postText,
       title: title,
-      post_date: Timestamp.fromDate(new Date()), // Data atual
+      post_date: Timestamp.fromDate(selectedDate), // Data atual
     };
 
     addPost(newPost);
@@ -230,12 +228,13 @@ export default function Posts() {
     const updatedPost: insertPostData = {
       user_id: 'ayXVaqgFJZ4sBgoLKW29',
       travel_id: travel_id,
-      post_date: Timestamp.fromDate(new Date()), // Data atual
+      post_date: Timestamp.fromDate(selectedDate),
       title: title,
       post_text: postText
     };
 
     updatePost(updatedPost, postId);
+    setSelectedDate(new Date());
     onRefresh();
     setEditPostModal(false)
   }
@@ -279,15 +278,8 @@ export default function Posts() {
       travel_id: travel_id,
       user_id: travel[0].user_id,
       origincity: travel[0].origincity,
-      origincountry: travel[0].origincountry,
-      originlatitude: travel[0].originlatitude,
-      originlongitude: travel[0].originlongitude,
       destinycity: travel[0].destinycity,
-      destinycountry: travel[0].destinycountry,
-      destinylatitude: travel[0].destinylatitude,
-      destinylongitude: travel[0].destinylongitude,
       distanceinmeters: travel[0].distanceinmeters,
-      modal: value ? value : '',
       travel_image: travel[0].travel_image,
       date: Timestamp.fromDate(new Date()), // Data atual,
       description: travel[0].description
@@ -297,6 +289,13 @@ export default function Posts() {
     onRefresh();
     setEditModal(false)
   }
+
+  const handleDateChange = (event: any, selectedDate: Date | undefined) => {
+    const currentDate = selectedDate || new Date();
+    setShowDatePicker(false);
+    setSelectedDate(currentDate);
+  };
+
 
   const renderPostCard: ListRenderItem<postData> = ({ item }) => (
     <View key={item.post_id} style={styles.cardContainer}>
@@ -341,6 +340,25 @@ export default function Posts() {
                       value={selectedPost[0].title}
                       onChangeText={handleEditTitle}
                     />
+
+                    <View style={styles.inputContainer}>
+
+                      <Text style={styles.inputLabel}>Data do diário</Text>
+
+                      {/* Campo de data */}
+                      <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.dateInput}>
+                        <Text style={styles.dateText}>{selectedDate.toLocaleDateString()}</Text>
+                      </TouchableOpacity>
+                      {showDatePicker && (
+                        <DateTimePicker
+                          value={selectedDate}
+                          mode="date"
+                          display="calendar"
+                          onChange={handleDateChange}
+                        />
+                      )}
+
+                    </View>
 
                     <TextInput
                       style={styles.modalInputPostText}
@@ -464,7 +482,7 @@ export default function Posts() {
 
                     <Text style={styles.headerText}>
 
-                      {travel[0].destinycity}, {travel[0].destinycountry}
+                      {travel[0].destinycity}
 
                     </Text>
 
@@ -505,25 +523,6 @@ export default function Posts() {
                           placeholderTextColor='#45B3AF'
                           value={travel[0].destinycity}
                           onChangeText={handleEditDestinyCity}
-                        />
-
-                        <DropDownPicker
-                          open={open}
-                          value={value}
-                          items={items}
-                          setOpen={setOpen}
-                          setValue={setValue}
-                          setItems={setItems}
-                          placeholder="Modalidade"
-                          style={styles.modalPicker}
-                          textStyle={styles.modalDropdownText}
-                          dropDownContainerStyle={styles.mdoalDropDownContainer}
-                          ArrowUpIconComponent={() => (
-                            <MaterialIcons size={28} name='keyboard-arrow-up' color='#45B3AF' />
-                          )}
-                          ArrowDownIconComponent={() => (
-                            <MaterialIcons size={28} name='keyboard-arrow-down' color='#45B3AF' />
-                          )}
                         />
 
                         <TextInput
@@ -639,6 +638,25 @@ export default function Posts() {
                           value={title}
                           onChangeText={handleTitle}
                         />
+
+                        <View style={styles.inputContainer}>
+
+                          <Text style={styles.inputLabel}>Data do Diário</Text>
+
+                          {/* Campo de data */}
+                          <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.dateInput}>
+                            <Text style={styles.dateText}>{selectedDate.toLocaleDateString()}</Text>
+                          </TouchableOpacity>
+                          {showDatePicker && (
+                            <DateTimePicker
+                              value={selectedDate}
+                              mode="date"
+                              display="calendar"
+                              onChange={handleDateChange}
+                            />
+                          )}
+
+                        </View>
 
                         <TextInput
                           style={styles.modalInputPostText}
@@ -760,6 +778,30 @@ const styles = StyleSheet.create({
     width: 250,
     height: 50,
     color: '#45B3AF'
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  inputLabel: {
+    fontSize: 16,
+    color: '#45B3AF',
+    marginBottom: 5,
+  },
+  dateInput: {
+    borderWidth: 1,
+    borderColor: '#45B3AF',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+    justifyContent: 'center',
+    width: 120,
+    marginLeft: 10
+  },
+  dateText: {
+    color: '#45B3AF',
+    fontSize: 16,
   },
   modalPicker: {
     borderWidth: 1,

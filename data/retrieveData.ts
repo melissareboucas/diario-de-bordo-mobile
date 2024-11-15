@@ -21,12 +21,18 @@ const getUserById = async (id: string) => {
 
     const userSnapshot = await getDocs(userQuery);
 
-    const user = userSnapshot.docs.map(doc => ({
-      user_id: doc.id,
-      ...doc.data()
-    }));
+    const userList = userSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        user_id: doc.id,
+        name: data.name || "Nome não informado",
+        username: data.username || "Usuário não informado",
+        profile_image: data.profile_image || "url_padrao_para_imagem",
+        background_image: data.background_image || "url_padrao_para_imagem",
+      };
+    });
 
-    return user;
+    return userList;
   } catch (error) {
     console.error('Erro ao buscar usuário: ', error);
   }
@@ -66,41 +72,6 @@ const getTravelsByUser = async (user_id: string) => {
     return travelsList;
   } catch (error) {
     console.error('Erro ao listar viagens: ', error);
-  }
-};
-
-const getMostPopularOriginCityByUser = async (user_id: string) => {
-  try {
-    const travelsCollection = collection(db, 'travels');
-
-    const travelsQuery = query(travelsCollection, where("user_id", "==", user_id))
-
-    const travelsSnapshot = await getDocs(travelsQuery);
-
-    const originCityCount: CityCount = {};
-
-    travelsSnapshot.forEach((doc) => {
-      const data = doc.data();
-
-      if (originCityCount[data.origincity]) {
-        originCityCount[data.origincity].count += 1;
-      } else {
-        originCityCount[data.origincity] = {
-          count: 1,
-          originCity: data.origincity,
-          originLatitude: data.originlatitude,
-          originLongitude: data.originlongitude
-        }
-      }
-
-    })
-
-    const originCityCountArray = Object.values(originCityCount);
-    originCityCountArray.sort((a, b) => b.count - a.count);
-
-    return originCityCountArray[0] || null
-  } catch (error) {
-    console.error('Erro ao achar cidade de origem mais popular: ', error);
   }
 };
 
@@ -207,32 +178,6 @@ const getTotalKmByUser = async (id: string) => {
   }
 }
 
-const getCountriesByUser = async (id: string) => {
-  try {
-
-    const travelsCollection = collection(db, 'travels');
-
-    const travelsQuery = query(travelsCollection, where("user_id", "==", id))
-
-    const travelsSnapshot = await getDocs(travelsQuery);
-
-    const distinctDestinyCountries = new Set<string>();
-
-    travelsSnapshot.forEach((doc) => {
-      const data = doc.data();
-      
-      if (data.destinycountry) {
-        distinctDestinyCountries.add(data.destinycountry);
-      }
-    });
-
-    return distinctDestinyCountries.size.toString();
-
-  } catch (error) {
-    console.error('Erro ao contabilizar países: ', error);
-  }
-}
-
 const getCitiesByUser = async (id: string) => {
   try {
 
@@ -259,6 +204,25 @@ const getCitiesByUser = async (id: string) => {
   }
 }
 
+const getTravels = async () => {
+  try {
+    const travelsCollection = collection(db, 'travels');
+
+    const travelsQuery = query(travelsCollection, orderBy("date", "desc"))
+
+    const travelsSnapshot = await getDocs(travelsQuery);
+
+    const travelsList = travelsSnapshot.docs.map(doc => ({
+      travel_id: doc.id,
+      ...doc.data()
+    }));
+    return travelsList;
+  } catch (error) {
+    console.error('Erro ao listar viagens: ', error);
+  }
+};
+
+
 function formatNumber(num: number): string {
   const million = 1000000;
   const thousand = 1000;
@@ -279,8 +243,7 @@ export {
   getPostsByTravel,
   getPostById,
   searchTravels,
-  getMostPopularOriginCityByUser,
   getTotalKmByUser,
-  getCountriesByUser,
-  getCitiesByUser
+  getCitiesByUser,
+  getTravels
 };

@@ -1,5 +1,5 @@
 import { Card } from '@/components/Card';
-import { getCitiesByUser, getCountriesByUser, getTotalKmByUser, getUserById } from '@/data/retrieveData';
+import { getCitiesByUser, getTotalKmByUser, getUserById } from '@/data/retrieveData';
 import { useIsFocused } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
 import { StyleSheet, SafeAreaView, StatusBar, Image, View, Text, ActivityIndicator, ListRenderItem } from 'react-native';
@@ -20,7 +20,6 @@ export default function Home() {
 
   const [user, setUser] = useState<any[]>([]);
   const [totalKm, setTotalKm] = useState('0');
-  const [totalCountries, setTotalCountries] = useState('0');
   const [totalCities, setTotalCities] = useState('0');
  
 
@@ -37,9 +36,6 @@ export default function Home() {
 
       const distance = await getTotalKmByUser("ayXVaqgFJZ4sBgoLKW29");
       setTotalKm(distance || '');
-
-      const countries = await getCountriesByUser("ayXVaqgFJZ4sBgoLKW29");
-      setTotalCountries(countries || '');
 
       const cities = await getCitiesByUser("ayXVaqgFJZ4sBgoLKW29");
       setTotalCities(cities || '');
@@ -77,8 +73,7 @@ export default function Home() {
 
       <View>
         <Card title="Viagens" total={totalKm} text="Km" />
-        <Card title="Países" total={totalCountries} text="" />
-        <Card title="Cidades" total={totalCities} text="" />
+        <Card title="Destinos" total={totalCities} text="" />
       </View>
     </View>
   )
