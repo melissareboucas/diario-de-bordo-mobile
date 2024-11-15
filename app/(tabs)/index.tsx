@@ -1,7 +1,7 @@
 import { Card } from '@/components/Card';
-import { getUserById } from '@/data/retrieveData';
+import { getCitiesByUser, getCountriesByUser, getTotalKmByUser, getUserById } from '@/data/retrieveData';
 import { useEffect, useState } from 'react';
-import { StyleSheet, SafeAreaView, ScrollView, StatusBar, Image, View, Text, ActivityIndicator, ListRenderItem } from 'react-native';
+import { StyleSheet, SafeAreaView, StatusBar, Image, View, Text, ActivityIndicator, ListRenderItem } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -15,26 +15,37 @@ interface userData {
 
 export default function Home() {
   const [loading, setLoading] = useState(true);
+
   const [user, setUser] = useState<any[]>([]);
+  const [totalKm, setTotalKm] = useState('0');
+  const [totalCountries, setTotalCountries] = useState('0');
+  const [totalCities, setTotalCities] = useState('0');
+ 
 
   useEffect(() => {
-
-    const fetchUser = async () => {
-      try {
-        setLoading(true);
-        const userDb = await getUserById("ayXVaqgFJZ4sBgoLKW29");
-        setUser(userDb || []);
-      } catch (error) {
-        console.error('Error fetching user:', error);
-      } finally {
-        setLoading(false);
-      }
-
-    };
-
-    fetchUser();
-
+    fetchData();
   }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const userDb = await getUserById("ayXVaqgFJZ4sBgoLKW29");
+      setUser(userDb || []);
+
+      const distance = await getTotalKmByUser("ayXVaqgFJZ4sBgoLKW29");
+      setTotalKm(distance || '');
+
+      const countries = await getCountriesByUser("ayXVaqgFJZ4sBgoLKW29");
+      setTotalCountries(countries || '');
+
+      const cities = await getCitiesByUser("ayXVaqgFJZ4sBgoLKW29");
+      setTotalCities(cities || '');
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderUser: ListRenderItem<userData> = ({ item }) => (
     <View key={item.user_id}>
@@ -62,9 +73,9 @@ export default function Home() {
       </View>
 
       <View>
-        <Card title="Viagens" total='1,2M' text="Km" />
-        <Card title="Países" total='2' text="países" />
-        <Card title="Cidades" total='4' text="cidades" />
+        <Card title="Viagens" total={totalKm} text="Km" />
+        <Card title="Países" total={totalCountries} text="" />
+        <Card title="Cidades" total={totalCities} text="" />
       </View>
     </View>
   )
@@ -73,24 +84,23 @@ export default function Home() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
-        
-          {loading && (
-            <View style={styles.container}>
-              <ActivityIndicator size="large" color="#196966" />
-            </View>)
-          }
 
-          {!loading && (
-            <FlatList
-              data={user}
-              renderItem={renderUser}
-              keyExtractor={item => item.user_id}
-              showsVerticalScrollIndicator={false}
-            />
+        {loading && (
+          <View style={styles.container}>
+            <ActivityIndicator size="large" color="#196966" />
+          </View>)
+        }
 
-          )}
+        {!loading && (
+          <FlatList
+            data={user}
+            renderItem={renderUser}
+            keyExtractor={item => item.user_id}
+            showsVerticalScrollIndicator={false}
+          />
 
-        
+        )}
+
       </SafeAreaView >
     </GestureHandlerRootView>
   );

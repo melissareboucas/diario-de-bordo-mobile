@@ -1,5 +1,5 @@
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
-import { db } from '../firebaseConfig'; 
+import { db } from '../firebaseConfig';
 
 interface CityInfo {
   count: number;
@@ -25,7 +25,7 @@ const getUserById = async (id: string) => {
       user_id: doc.id,
       ...doc.data()
     }));
-    
+
     return user;
   } catch (error) {
     console.error('Erro ao buscar usuário: ', error);
@@ -96,7 +96,7 @@ const getMostPopularOriginCityByUser = async (user_id: string) => {
     })
 
     const originCityCountArray = Object.values(originCityCount);
-    originCityCountArray.sort((a,b) => b.count - a.count);
+    originCityCountArray.sort((a, b) => b.count - a.count);
 
     return originCityCountArray[0] || null
   } catch (error) {
@@ -116,7 +116,7 @@ const getTravelById = async (travel_id: string) => {
       travel_id: doc.id,
       ...doc.data()
     }));
-    
+
     return travel;
   } catch (error) {
     console.error('Erro ao listar viagem: ', error);
@@ -153,7 +153,7 @@ const getPostById = async (post_id: string) => {
       post_id: doc.id,
       ...doc.data()
     }));
-    
+
     return post;
   } catch (error) {
     console.error('Erro ao listar diário: ', error);
@@ -183,4 +183,104 @@ const searchTravels = async (user_id: string, text: string) => {
   }
 };
 
-export { getUserById, listUsers, getTravelsByUser, getTravelById, getPostsByTravel, getPostById, searchTravels, getMostPopularOriginCityByUser };
+const getTotalKmByUser = async (id: string) => {
+  try {
+
+    const travelsCollection = collection(db, 'travels');
+
+    const travelsQuery = query(travelsCollection, where("user_id", "==", id))
+
+    const travelsSnapshot = await getDocs(travelsQuery);
+
+    let totalKm = 0;
+
+    travelsSnapshot.forEach((doc) => {
+      totalKm += doc.data().distanceinmeters;
+    });
+
+    const sumKm = Math.ceil(Number(totalKm) / 1000);
+    const formattedValue = formatNumber(sumKm);
+    return formattedValue;
+
+  } catch (error) {
+    console.error('Erro ao somar total de km: ', error);
+  }
+}
+
+const getCountriesByUser = async (id: string) => {
+  try {
+
+    const travelsCollection = collection(db, 'travels');
+
+    const travelsQuery = query(travelsCollection, where("user_id", "==", id))
+
+    const travelsSnapshot = await getDocs(travelsQuery);
+
+    const distinctDestinyCountries = new Set<string>();
+
+    travelsSnapshot.forEach((doc) => {
+      const data = doc.data();
+      
+      if (data.destinycountry) {
+        distinctDestinyCountries.add(data.destinycountry);
+      }
+    });
+
+    return distinctDestinyCountries.size.toString();
+
+  } catch (error) {
+    console.error('Erro ao contabilizar países: ', error);
+  }
+}
+
+const getCitiesByUser = async (id: string) => {
+  try {
+
+    const travelsCollection = collection(db, 'travels');
+
+    const travelsQuery = query(travelsCollection, where("user_id", "==", id))
+
+    const travelsSnapshot = await getDocs(travelsQuery);
+
+    const distinctDestinyCities = new Set<string>();
+
+    travelsSnapshot.forEach((doc) => {
+      const data = doc.data();
+      
+      if (data.destinycity) {
+        distinctDestinyCities.add(data.destinycity);
+      }
+    });
+
+    return distinctDestinyCities.size.toString();
+
+  } catch (error) {
+    console.error('Erro ao contabilizar cidades: ', error);
+  }
+}
+
+function formatNumber(num: number): string {
+  const million = 1000000;
+  const thousand = 1000;
+  if (num >= million) {
+    return (num / million).toFixed(1) + 'M';
+  } else if (num >= thousand) {
+    return (num / thousand).toFixed(1) + 'K';
+  } else {
+    return num.toString();
+  }
+}
+
+export {
+  getUserById,
+  listUsers,
+  getTravelsByUser,
+  getTravelById,
+  getPostsByTravel,
+  getPostById,
+  searchTravels,
+  getMostPopularOriginCityByUser,
+  getTotalKmByUser,
+  getCountriesByUser,
+  getCitiesByUser
+};

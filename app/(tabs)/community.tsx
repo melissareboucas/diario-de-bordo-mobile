@@ -1,4 +1,4 @@
-import LocationSelector from "@/components/LocactionSelector";
+
 import { useState } from "react";
 import { StyleSheet, SafeAreaView, TouchableOpacity, View, Text, Modal, Button } from "react-native";
 import { GooglePlaceData, GooglePlaceDetail, GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
@@ -19,11 +19,6 @@ export default function Community() {
         onPress={() => setModalVisible(true)} 
       />
       
-      <LocationSelector
-        isVisible={modalVisible}
-       
-        onSelectLocation={handleLocationSelect}
-      />
       
     </View>
   );

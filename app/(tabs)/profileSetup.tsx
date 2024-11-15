@@ -60,10 +60,6 @@ export default function ProfileSetup() {
   }, [mostPopularOriginCity]);
 
 
-
-
-
-
   const onRefresh = useCallback(() => {
     setRefreshing(true);
 
@@ -89,23 +85,6 @@ export default function ProfileSetup() {
             />
           }
         >
-
-          {isMapReady ? (
-            <MapView
-              style={styles.map}
-              region={region} // Usar region em vez de initialRegion
-              onRegionChangeComplete={(newRegion) => {
-                if (!refreshing) {
-                  setRegion(newRegion);
-                }
-              }}
-            >
-
-            </MapView>) : (
-            <View style={styles.container}>
-              <ActivityIndicator size="large" color="#196966" />
-            </View>
-          )}
 
           <Text style={styles.title}>Comunidade</Text>
         </ScrollView>)}
