@@ -179,7 +179,9 @@ export default function Posts() {
 
   const handleDeleteTravel = () => {
     deleteTravelById(travel_id);
-    navigation.goBack();
+    router.push({
+      pathname: '/(tabs)/travels',
+    })
     setDeleteModal(false)
   };
 
