@@ -15,7 +15,8 @@ import { useNavigation } from '@react-navigation/native';
 import { addPost } from '@/data/insertData';
 import { updatePost, updateTravel } from '@/data/updateData';
 
-import DateTimePicker from '@react-native-community/datetimepicker'; // Importando o DateTimePicker
+import DateTimePicker from '@react-native-community/datetimepicker'; 
+import * as ImagePicker from 'expo-image-picker';
 
 
 interface postData {
@@ -70,6 +71,9 @@ export default function Posts() {
 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const [travel_image, setTravel_image] = useState("");
+  const [localImageTravel, setLocalImageTravel] = useState('');
 
 
   const navigation = useNavigation();
@@ -271,7 +275,7 @@ export default function Posts() {
       }
       return prevPosts;
     });
-    
+
   };
 
   const handleEditDescription = (text: string) => {
@@ -285,6 +289,30 @@ export default function Posts() {
     });
   };
 
+  const pickImageTravel = async () => {
+    // Solicitar permissão para acessar a galeria
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      console.log("sem acesso")
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      const uri = result.assets[0].uri;
+      setLocalImageTravel(result.assets[0].uri);
+      setTravel_image(result.assets[0].uri);
+      
+    }
+
+  }
+
   const handleEditTravel = (travel_id: string) => {
     const updatedTravel: travelData = {
       travel_id: travel_id,
@@ -292,7 +320,7 @@ export default function Posts() {
       origincity: travel[0].origincity,
       destinycity: travel[0].destinycity,
       distanceinmeters: travel[0].distanceinmeters,
-      travel_image: travel[0].travel_image,
+      travel_image: travel_image,
       date: travel[0].date,
       description: travel[0].description
     };
@@ -507,7 +535,11 @@ export default function Posts() {
 
                   {/*edit travel */}
                   <TouchableOpacity
-                    onPress={() => setEditModal(true)}
+                    onPress={() => {
+                      setTravel_image(travel[0].travel_image)
+                      
+                      setEditModal(true)
+                    }}
                   >
                     <MaterialIcons size={28} name='edit' color={'#45B3AF'} />
                   </TouchableOpacity>
@@ -545,9 +577,9 @@ export default function Posts() {
 
                           <TextInput
                             style={styles.distanceText}
-                            placeholder='0'
+                            //placeholder='0'
                             placeholderTextColor='#45B3AF'
-                            value={travel[0].distanceinmeters}
+                            value={travel[0].distanceinmeters.toString()}
                             keyboardType="numeric"
                             onChangeText={handleEditDistance}
                           />
@@ -583,18 +615,24 @@ export default function Posts() {
                           onChangeText={handleEditDescription}
                         />
 
-                        <TouchableOpacity>
-                          <Image
+                        <TouchableOpacity
+                          onPress={pickImageTravel}
+                        >
+                          {localImageTravel && <Image source={{ uri: localImageTravel }} style={styles.modalImage} />}
+                          {!localImageTravel && <Image
                             style={styles.modalImage}
-                            source={require('../../assets/images/addImage.png')}
-                          />
+                            source={{ uri: travel[0].travel_image }}
+                          />}
                         </TouchableOpacity>
 
                         <View style={styles.modalButtons}>
 
                           <TouchableOpacity
                             style={styles.modalCancelButton}
-                            onPress={() => setEditModal(false)}>
+                            onPress={() => {
+                              setLocalImageTravel('')
+                              setEditModal(false)
+                            }}>
                             <Text style={styles.modalCancelButtonText}>
                               Cancelar
                             </Text>

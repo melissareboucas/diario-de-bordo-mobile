@@ -1,5 +1,5 @@
-import { Card } from '@/components/Card';
-import { getCitiesByUser, getCountriesByUser, getTotalKmByUser, getUserById } from '@/data/retrieveData';
+
+import { getUserById } from '@/data/retrieveData';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, SafeAreaView, StatusBar, Image, View, Text, ActivityIndicator, ListRenderItem, TouchableOpacity, Modal, TextInput } from 'react-native';
@@ -155,7 +155,7 @@ export default function ProfileSetup() {
         style={styles.headerButton}
         onPress={() => {
           setName(item.name),
-            setUserName(item.username)
+          setUserName(item.username)
           setBackground_image(item.background_image)
           setProfile_image(item.profile_image)
           seteEditProfileModal(true)
