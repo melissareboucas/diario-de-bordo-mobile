@@ -18,6 +18,11 @@ import { updatePost, updateTravel } from '@/data/updateData';
 import DateTimePicker from '@react-native-community/datetimepicker'; 
 import * as ImagePicker from 'expo-image-picker';
 
+import { useUser } from '@/UserContext';
+
+import { useRouter } from 'expo-router';
+import { BackHandler } from 'react-native';
+
 
 interface postData {
   post_id: string,
@@ -52,6 +57,11 @@ export default function Posts() {
   const { id } = useLocalSearchParams();
   const travel_id = id as string;
 
+  const router = useRouter();
+
+  const { userId } = useUser();
+  const user_id = userId as string;
+
   const [posts, setPosts] = useState<any[]>([]);
   const [travel, setTravel] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,6 +87,19 @@ export default function Posts() {
 
 
   const navigation = useNavigation();
+
+  useEffect(() => {
+    const handleBackPress = () => {
+      router.push('/(tabs)/home');
+      return true;
+    };
+
+    BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+
+    return () => {
+      BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
+    };
+  }, [router]);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -162,7 +185,7 @@ export default function Posts() {
 
   const handleCreatePost = () => {
     const newPost: insertPostData = {
-      user_id: 'ayXVaqgFJZ4sBgoLKW29',
+      user_id: user_id,
       travel_id: travel_id,
       post_text: postText,
       title: title,
@@ -216,7 +239,7 @@ export default function Posts() {
 
   const handleEditPost = (postId: string) => {
     const updatedPost: insertPostData = {
-      user_id: 'ayXVaqgFJZ4sBgoLKW29',
+      user_id: user_id,
       travel_id: travel_id,
       post_date: Timestamp.fromDate(selectedDate),
       title: title,

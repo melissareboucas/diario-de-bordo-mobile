@@ -2,27 +2,22 @@ import React, { useCallback, useEffect, useState } from 'react';
 
 import {
   StyleSheet, SafeAreaView, StatusBar,
-  Image, View, Text, FlatList, TouchableOpacity, Modal,
-  TextInput, ListRenderItem, RefreshControl,
+  Image, View, Text, FlatList,
+  ListRenderItem, RefreshControl,
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
 
-import * as ImagePicker from 'expo-image-picker';
 
-import { getTravels, getTravelsByUser, getUserById, searchTravels } from '../../data/retrieveData'
-import { addTravel } from '../../data/insertData'
+import { getTravels} from '../../data/retrieveData'
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Timestamp } from 'firebase/firestore';
-import { router } from 'expo-router';
 
 import { useIsFocused } from '@react-navigation/native';
 
-import { storage } from '@/firebaseConfig';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-
-import DateTimePicker from '@react-native-community/datetimepicker'; // Importando o DateTimePicker
+import { useRouter } from 'expo-router';
+import { BackHandler } from 'react-native';
 
 
 
@@ -40,6 +35,8 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 
 export default function Community() {
+  const router = useRouter();
+
   const isFocused = useIsFocused();
 
   const [travels, setTravels] = useState<any[]>([]);
@@ -47,6 +44,18 @@ export default function Community() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    const handleBackPress = () => {
+      router.push('/(tabs)/home');
+      return true;
+    };
+
+    BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+
+    return () => {
+      BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
+    };
+  }, [router]);
 
   const fetchData = async () => {
     try {

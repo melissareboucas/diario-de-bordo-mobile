@@ -10,6 +10,10 @@ import * as ImagePicker from 'expo-image-picker';
 import { updateUser } from '@/data/updateData';
 import { useIsFocused } from '@react-navigation/native';
 
+import { useUser } from '@/UserContext';
+
+import { useRouter } from 'expo-router';
+import { BackHandler } from 'react-native';
 
 interface userData {
   user_id: string,
@@ -27,6 +31,11 @@ interface insertUserData {
 }
 
 export default function ProfileSetup() {
+  const { userId } = useUser();
+  const user_id = userId as string;
+
+  const router = useRouter();
+
   const isFocused = useIsFocused();
   const [loading, setLoading] = useState(true);
 
@@ -42,6 +51,19 @@ export default function ProfileSetup() {
   const [localImageProfile, setLocalImageProfile] = useState('');
 
   useEffect(() => {
+    const handleBackPress = () => {
+      router.push('/(tabs)/home');
+      return true;
+    };
+
+    BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+
+    return () => {
+      BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
+    };
+  }, [router]);
+
+  useEffect(() => {
     if (isFocused) {
       fetchData();
     }
@@ -50,7 +72,7 @@ export default function ProfileSetup() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const userDb = await getUserById("ayXVaqgFJZ4sBgoLKW29");
+      const userDb = await getUserById(user_id);
       setUser(userDb || []);
     } catch (error) {
       console.error('Error fetching data:', error);

@@ -10,6 +10,8 @@ import { useColorScheme } from '@/components/useColorScheme';
 
 import 'react-native-get-random-values'
 
+import { UserProvider } from '@/UserContext';
+
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -46,7 +48,12 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
+
+  return (
+    <UserProvider>
+      <RootLayoutNav />
+    </UserProvider>
+  )
 }
 
 function RootLayoutNav() {

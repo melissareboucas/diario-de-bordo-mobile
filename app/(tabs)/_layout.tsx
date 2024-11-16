@@ -27,6 +27,16 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
+          //tabBarLabel: "Início",
+          href: null,
+          headerShown: false,
+          //tabBarIcon: ({ color }) => <TabBarIcon name="map" color={color} />,
+          tabBarStyle: { display: 'none' },
+        }}
+      />
+      <Tabs.Screen
+        name="home"
+        options={{
           tabBarLabel: "Início",
           headerShown: false,
           tabBarIcon: ({ color }) => <TabBarIcon name="map" color={color} />,

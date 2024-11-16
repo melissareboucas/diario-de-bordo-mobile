@@ -1,145 +1,196 @@
-import { Card } from '@/components/Card';
-import { getCitiesByUser, getTotalKmByUser, getUserById } from '@/data/retrieveData';
-import { useIsFocused } from '@react-navigation/native';
-import { useEffect, useState } from 'react';
-import { StyleSheet, SafeAreaView, StatusBar, Image, View, Text, ActivityIndicator, ListRenderItem } from 'react-native';
-import { FlatList } from 'react-native-gesture-handler';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { signIn } from '@/data/authData';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import { StyleSheet, StatusBar, Image, View, Text, TextInput, TouchableOpacity } from 'react-native';
+import { useUser } from '@/UserContext';
 
-interface userData {
-  user_id: string,
-  name: string,
-  username: string,
-  profile_image: string,
-  background_image: string,
-}
+export default function Login() {
+    const { setUserId } = useUser();
+    
+    const [email, setEmail] = useState('');
+    const [emailError, setEmailError] = useState('');
+    const [password, setPassword] = useState('');
 
-export default function Home() {
-  const isFocused = useIsFocused();
-  const [loading, setLoading] = useState(true);
-
-  const [user, setUser] = useState<any[]>([]);
-  const [totalKm, setTotalKm] = useState('0');
-  const [totalCities, setTotalCities] = useState('0');
- 
-
-  useEffect(() => {
-    if (isFocused) {
-    fetchData();}
-  }, [isFocused]);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const userDb = await getUserById("ayXVaqgFJZ4sBgoLKW29");
-      setUser(userDb || []);
-
-      const distance = await getTotalKmByUser("ayXVaqgFJZ4sBgoLKW29");
-      setTotalKm(distance || '');
-
-      const cities = await getCitiesByUser("ayXVaqgFJZ4sBgoLKW29");
-      setTotalCities(cities || '');
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const renderUser: ListRenderItem<userData> = ({ item }) => (
-    <View key={item.user_id}>
-      <View>
-        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-        <Image
-          source={{ uri: item.background_image }}
-          style={styles.mapImage}
-        />
-      </View>
-
-      <View style={styles.profileArea}>
-        <Image
-          source={{ uri: item.profile_image }}
-          style={styles.profileImage}
-        />
-        <View style={styles.profileAreaText}>
-          <Text style={styles.profileNameText}>
-            {item.name}
-          </Text>
-          <Text style={styles.profileUserNameText}>
-            {item.username}
-          </Text>
-        </View>
-      </View>
-
-      <View>
-        <Card title="Viagens" total={totalKm} text="Km" />
-        <Card title="Destinos" total={totalCities} text="" />
-      </View>
-    </View>
-  )
-
-
-  return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaView style={styles.container}>
-
-        {loading && (
-          <View style={styles.container}>
-            <ActivityIndicator size="large" color="#196966" />
-          </View>)
+    const handleEmail = (text: string) => {
+        setEmail(text);
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(text)) {
+            setEmailError('Email inválido');
+        } else {
+            setEmailError('');
         }
+    };
 
-        {!loading && (
-          <FlatList
-            data={user}
-            renderItem={renderUser}
-            keyExtractor={item => item.user_id}
-            showsVerticalScrollIndicator={false}
-          />
+    const handlePassword = (text: string) => {
+        setPassword(text);
+    };
 
-        )}
+    const handleLogin = async (email: string, password: string) => {
+        try {
+            const user = await signIn(email, password);
+            if (user && 'user_id' in user) {
+                setUserId(user.user_id)
+                router.push({
+                    pathname: '/(tabs)/home'
+                })
+            }
+          } catch (error) {
+            console.error("Erro no login:", error);
+          }
+    };
 
-      </SafeAreaView >
-    </GestureHandlerRootView>
-  );
+    const handleCreateAccount = () => {
+        
+    };
+
+    return (
+        <View style={styles.container}>
+            <View style={styles.imageContainer}>
+
+
+                <Image
+                    source={require('../../assets/images/loginImage.png')}
+                    style={styles.image}
+                />
+                <Text style={styles.title}>Fazer Login</Text>
+                <View style={styles.cardContainer}>
+                    <View style={styles.card}>
+
+                        <TextInput
+                            style={styles.inputText}
+                            placeholder='Email'
+                            placeholderTextColor='#45B3AF'
+                            value={email}
+                            onChangeText={handleEmail}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                        />
+                        {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+
+
+                        <TextInput
+                            style={styles.inputText}
+                            placeholder='Senha'
+                            placeholderTextColor='#45B3AF'
+                            value={password}
+                            onChangeText={handlePassword}
+                            secureTextEntry={true}
+                        />
+
+                        <View style={styles.buttons}>
+
+                            <TouchableOpacity
+                                style={styles.createButton}
+                                onPress={() => handleCreateAccount()}
+                            >
+                                <Text style={styles.createButtonText}>
+                                    Criar uma conta
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.loginButton}
+                                onPress={() => handleLogin(email, password)}>
+                                <Text style={styles.loginButtonText}>
+                                    Entrar
+                                </Text>
+                            </TouchableOpacity>
+
+                        </View>
+
+
+
+                    </View>
+                </View>
+            </View>
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: StatusBar.currentHeight || 0,
-    backgroundColor: "white",
-  },
-  mapImage: {
-    width: '100%',
-    height: 200,
-    resizeMode: 'cover',
-  },
-  profileArea: {
-    margin: 10,
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'center',
+    container: {
+        flex: 1,
+        paddingTop: StatusBar.currentHeight || 0,
+        backgroundColor: "white",
+        justifyContent: 'center',
+    },
+    imageContainer: {
+        justifyContent: 'flex-start',
+        alignItems: "center"
+    },
+    image: {
+        resizeMode: 'cover',
 
-  },
-  profileImage: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    borderWidth: 3,
-    borderColor: '#45B3AF',
-  },
-  profileAreaText: {
-    marginLeft: 15,
-  },
-  profileNameText: {
-    fontSize: 25,
-    marginBottom: 10,
-    color: '#196966'
-  },
-  profileUserNameText: {
-    fontSize: 16,
-    color: '#45B3AF'
-  },
+    },
+    title: {
+        position: 'absolute',
+        fontSize: 48,
+        top: 0,
+        fontWeight: '500',
+        color: "#C0E5E4"
+    },
+    cardContainer: {
+        position: 'absolute',
+        top: 80,
+    },
+    card: {
+        borderWidth: 1,
+        borderColor: 'white',
+        backgroundColor: 'white',
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        margin: 10,
+        padding: 5,
+    },
+    inputText: {
+        borderWidth: 1,
+        borderColor: '#45B3AF',
+        backgroundColor: 'white',
+        borderRadius: 20,
+        paddingLeft: 10,
+        paddingRight: 10,
+        margin: 5,
+        width: 250,
+        height: 50,
+        color: '#45B3AF'
+    },
+    errorText: {
+        color: 'red',
+    },
+    buttons: {
+        flexDirection: 'row',
+        justifyContent: 'space-evenly',
+        marginTop: 10
+
+    },
+    createButton: {
+        backgroundColor: '#E5E5E5',
+        borderRadius: 7,
+        paddingTop: 3,
+        paddingBottom: 3,
+        paddingLeft: 10,
+        paddingRight: 10,
+        marginRight: 10,
+    },
+    createButtonText: {
+        color: 'black',
+        padding: 5
+    },
+    loginButton: {
+        backgroundColor: '#45B3AF',
+        borderRadius: 7,
+        paddingTop: 3,
+        paddingBottom: 3,
+        paddingLeft: 10,
+        paddingRight: 10,
+        marginLeft: 10,
+    },
+    loginButtonText: {
+        color: 'white',
+        padding: 5
+    },
 
 });

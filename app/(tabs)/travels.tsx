@@ -24,7 +24,12 @@ import { useIsFocused } from '@react-navigation/native';
 import { storage } from '@/firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-import DateTimePicker from '@react-native-community/datetimepicker'; // Importando o DateTimePicker
+import DateTimePicker from '@react-native-community/datetimepicker'; 
+
+import { useUser } from '@/UserContext';
+
+import { useRouter } from 'expo-router';
+import { BackHandler } from 'react-native';
 
 
 
@@ -61,6 +66,11 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 
 export default function Travels() {
+  const { userId } = useUser();
+  const user_id = userId as string;
+
+  const router = useRouter();
+
   const isFocused = useIsFocused();
 
   const [travels, setTravels] = useState<any[]>([]);
@@ -68,12 +78,6 @@ export default function Travels() {
   const [searchText, setSearchText] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(null);
-  const [items, setItems] = useState([
-    { label: 'Sim', value: 'yes' },
-    { label: 'Não', value: 'no' },
-  ]);
   const [origincity, setOriginCity] = useState('');
   const [destinycity, setDestinyCity] = useState('');
   const [description, setDescription] = useState('');
@@ -92,15 +96,28 @@ export default function Travels() {
 
   const [user, setUser] = useState<userData[]>([]);
 
+  useEffect(() => {
+    const handleBackPress = () => {
+      router.push('/(tabs)/home');
+      return true;
+    };
+
+    BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+
+    return () => {
+      BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
+    };
+  }, [router]);
+
   const fetchData = async () => {
     try {
       setLoading(true);
 
-      const userDb = await getUserById("ayXVaqgFJZ4sBgoLKW29");
+      const userDb = await getUserById(user_id);
       setUser(userDb || []);
 
 
-      const travelsList = await getTravelsByUser("ayXVaqgFJZ4sBgoLKW29");
+      const travelsList = await getTravelsByUser(user_id);
       setTravels(travelsList || []);
 
     } catch (error) {
@@ -127,7 +144,7 @@ export default function Travels() {
     const fetchFilteredTravels = async () => {
       try {
         setLoading(true);
-        const travelsList = await searchTravels('ayXVaqgFJZ4sBgoLKW29', text);
+        const travelsList = await searchTravels(user_id, text);
         setTravels(travelsList || []);
       } catch (error) {
         console.error('Error fetching travels:', error);
@@ -211,7 +228,7 @@ export default function Travels() {
 
     setTimeout(() => {
       const fetchTravels = async () => {
-        const travelsList = await getTravelsByUser("ayXVaqgFJZ4sBgoLKW29");
+        const travelsList = await getTravelsByUser(user_id);
         setTravels(travelsList || []);
       };
 
@@ -274,7 +291,6 @@ export default function Travels() {
           setSelectedDate(new Date())
           setLocalImage("")
           setTravelImage("")
-          setValue(null)
           onRefresh();
           setModalCreateTravelVisible(false)
         })
