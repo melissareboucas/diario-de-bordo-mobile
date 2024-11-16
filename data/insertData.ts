@@ -1,4 +1,4 @@
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, Timestamp, setDoc, doc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 
 interface travelData {
@@ -19,6 +19,13 @@ interface postData {
     post_date: Timestamp;
 }
 
+interface userData {
+    name: string,
+    username: string,
+    background_image: string,
+    profile_image: string
+}
+
 const addTravel = async (travel: travelData) => {
     try {
         const docRef = await addDoc(collection(db, 'travels'), travel);
@@ -35,4 +42,18 @@ const addPost = async (post: postData) => {
     }
 };
 
-export { addTravel, addPost };
+const addUser = async (user: userData, documentId: string) => {
+    try {
+      // Cria uma referência ao documento com o ID especificado
+      const docRef = doc(collection(db, 'users'), documentId);
+  
+      // Usa setDoc para criar ou sobrescrever o documento
+      await setDoc(docRef, user);
+  
+      console.log('Documento criado com sucesso!');
+    } catch (e) {
+      console.error('Erro ao adicionar o documento: ', e);
+    }
+  };
+
+export { addTravel, addPost, addUser };

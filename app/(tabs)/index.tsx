@@ -10,6 +10,7 @@ export default function Login() {
     const [email, setEmail] = useState('');
     const [emailError, setEmailError] = useState('');
     const [password, setPassword] = useState('');
+    const [passwordError, setPasswordError] = useState('');
 
     const handleEmail = (text: string) => {
         setEmail(text);
@@ -23,9 +24,18 @@ export default function Login() {
 
     const handlePassword = (text: string) => {
         setPassword(text);
+        if (text) {
+            setPasswordError('');
+        }
     };
 
+
+
     const handleLogin = async (email: string, password: string) => {
+        if (!password) {
+            setPasswordError('A senha é obrigatória.');
+            return;
+        }
         try {
             const user = await signIn(email, password);
             if (user && 'user_id' in user) {
@@ -40,7 +50,9 @@ export default function Login() {
     };
 
     const handleCreateAccount = () => {
-        
+        router.push({
+            pathname: '/(tabs)/signup'
+        })
     };
 
     return (
@@ -76,6 +88,7 @@ export default function Login() {
                             onChangeText={handlePassword}
                             secureTextEntry={true}
                         />
+                        {passwordError ? <Text style={{ color: 'red' }}>{passwordError}</Text> : null}
 
                         <View style={styles.buttons}>
 

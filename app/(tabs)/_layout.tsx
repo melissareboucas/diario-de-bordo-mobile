@@ -34,6 +34,18 @@ export default function TabLayout() {
           tabBarStyle: { display: 'none' },
         }}
       />
+
+      <Tabs.Screen
+        name="signup"
+        options={{
+          //tabBarLabel: "Início",
+          href: null,
+          headerShown: false,
+          //tabBarIcon: ({ color }) => <TabBarIcon name="map" color={color} />,
+          tabBarStyle: { display: 'none' },
+        }}
+      />
+
       <Tabs.Screen
         name="home"
         options={{
